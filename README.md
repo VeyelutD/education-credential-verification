@@ -18,7 +18,7 @@ majority-based policies in insider resistance, gas consumption and issuance avai
 | 4. Foundry tests | 77 passing: `test/` |
 | 5. End-to-end demo | `script/Demo.s.sol` (verified on Anvil) |
 | 6–9. Experiments A/B/C, figures, tables | done: `experiments/`, results in [`docs/EXPERIMENTS.md`](docs/EXPERIMENTS.md) |
-| 10. Kazakhstan deployment discussion, paper | todo: `paper/` |
+| 10. Paper (IEEE LaTeX) | skeleton with generated figures, tables and number macros: [`paper/`](paper/README.md); prose to be written |
 
 ## Layout
 

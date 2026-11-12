@@ -1,0 +1,6 @@
+# Same line endings on every machine (Windows, macOS, Linux), so generated
+# files do not show spurious diffs between team members.
+* text=auto eol=lf
+*.png binary
+*.pdf binary
+*.zip binary

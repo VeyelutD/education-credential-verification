@@ -1,0 +1,9 @@
+policy,label,group,min_coalition_size,smallest_capable_coalitions,minimal_winning_coalitions,capable_coalitions_total,success_fraction_at_min_size
+A_single,A: Single issuer,primary,1,2,2,96,0.285714
+B_unanimous,B: Unanimous (7-of-7),primary,7,1,1,1,1.0
+C_majority_4of7,C: Threshold 4-of-7,primary,4,35,35,64,1.0
+D_role_4of7,D: Role-constrained 4-of-7,primary,4,24,24,51,0.685714
+C_majority_3of7,C: Threshold 3-of-7,sensitivity,3,35,35,99,1.0
+D_role_3of7,D: Role-constrained 3-of-7,sensitivity,3,12,12,63,0.342857
+C_majority_5of7,C: Threshold 5-of-7,sensitivity,5,21,21,29,1.0
+D_role_5of7,D: Role-constrained 5-of-7,sensitivity,5,19,19,27,0.904762

@@ -1,0 +1,16 @@
+{
+  "date": "2026-11-11",
+  "forge": "forge Version: 1.9.0",
+  "anvil": "anvil Version: 1.9.0",
+  "solc": "0.8.24",
+  "optimizer_runs": 200,
+  "evm_version / anvil hardfork": "cancun",
+  "reps_per_policy": 10,
+  "network": "local Anvil (chain id 31337), fresh node per policy",
+  "gas_prices_gwei_are_assumptions": [
+    0.5,
+    2,
+    10,
+    30
+  ]
+}

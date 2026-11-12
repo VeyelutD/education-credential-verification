@@ -1,0 +1,49 @@
+\section{System Design}\label{sec:design}
+% Source of truth: docs/ARCHITECTURE.md, docs/THREAT_MODEL.md and src/. Describe in your own words.
+
+\subsection{Architecture}
+\note{A shared \texttt{CredentialRegistry} plus stateless \texttt{IApprovalPolicy} implementations. The policy is
+\texttt{immutable}, so it cannot be downgraded. Only issuance authorization differs between policies; the
+credential format, storage, lifecycle, revocation and events are identical. Consider a small architecture
+figure (draw it yourselves, e.g.\ in TikZ).}
+
+\subsection{Actors and roles}
+\note{Governor (manages universities and approvers, has no issuance power, cannot be an approver); approvers
+with exactly one role each (Registrar, Dean, Exam Officer); verifier; holder. Static separation of duty.}
+
+\subsection{Credential commitment}
+\note{Give the exact procedure:
+$c = \mathrm{keccak256}(\mathrm{abi.encode}(\mathit{DOMAIN}, \mathrm{keccak256}(\mathit{canonicalJSON}), \mathit{salt}))$,
+with a 32-byte random salt held by the graduate and
+$\mathit{DOMAIN}=\mathrm{keccak256}(\texttt{KZ-ACADEMIC-CREDENTIAL-v1})$.
+Explain why the salt is needed (low-entropy fields) and why the verifier must cross-check the issuer named in
+the document. Mention the Python--Solidity parity test over 50 synthetic credentials.}
+
+\subsection{Lifecycle and verification states}
+\note{None $\rightarrow$ Pending $\rightarrow$ Issued $\rightarrow$ Revoked; Cancelled burns the commitment.
+The verifier sees NotFound, Pending, Valid or Revoked, plus the issuer and an issuer-active flag.}
+
+\subsection{Approval policies}
+\begin{table}[t]
+\centering\small
+\caption{Approval policies compared (university with 2 Registrars, 3 Deans and 2 Exam Officers).}
+\label{tab:policies}
+\begin{tabular}{lll}
+\toprule
+Policy & Eligible roles & Rule at finalization\\
+\midrule
+A Single issuer & Registrar & $\geq 1$ valid approval\\
+B Unanimous & all & all $N=7$ active approvers\\
+C Threshold & all & $\geq 4$ valid approvals\\
+D Role-constrained & all & $\geq 4$ and $\geq 1$ per role\\
+\bottomrule
+\end{tabular}
+\end{table}
+\note{Explain why C and D share the threshold: it isolates the effect of role separation. Explain the
+approver-nonce rule: any role change or (de)activation invalidates that approver's pending approvals, and
+validity is re-checked at finalization.}
+
+\subsection{Threat model}
+\note{In-scope adversaries: a single insider, a $k$-coalition, an outsider, a document tamperer. Trusted: the
+governor. Out of scope: falsified source records. List each enforced property with the test that checks it
+(unauthorized issuance, duplicate issuance or approval, approval reuse, administrative bypass).}

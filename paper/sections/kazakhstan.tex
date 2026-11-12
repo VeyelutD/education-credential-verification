@@ -1,0 +1,53 @@
+\section{Deployment in Kazakhstan: Nazarbayev University as a Hypothetical Case}\label{sec:kz}
+% Scope rules (from the project brief): NU does NOT use this system; blockchain records do NOT automatically
+% gain legal recognition. Every factual claim about EPVO, laws or NU procedures needs a primary source you
+% have opened (items 25-30 of your reading list). Items marked VERIFY are things we could not confirm.
+
+\subsection{Existing verification infrastructure}
+\note{Describe the current national route for checking a diploma, from primary sources:
+the Unified Platform of Higher Education (EPVO, item 27) and the ministry's guidance on confirming diploma
+authenticity (item 26).
+VERIFY: who enters diploma records into EPVO (university staff? which role?), what an employer can check today
+and how, whether checks are public or require authorization, and how errors are corrected.
+If the anti-corruption report (item 25) documents issuer-side access problems or record discrepancies, quote it
+precisely. That evidence motivates the insider threat model.}
+
+\subsection{Complement, not replace}
+\note{Position the prototype as a tamper-evident \emph{audit and approval layer} beside EPVO:
+EPVO stays the authoritative record; the blockchain holds only salted commitments, so it records \emph{that} a
+credential was approved and by which roles, and makes later silent edits detectable.
+Possible integration points to discuss (as options, not claims): EPVO or the ministry as governor; EPVO
+publishing commitments for diplomas already in its database; employers verifying through EPVO with the
+on-chain status as an additional signal.
+Be explicit that a blockchain record alone has no legal standing as a diploma (Law on Education, item 29).}
+
+\subsection{Registrar workflows and role governance}
+\note{Map the four policies onto plausible university workflows. Who signs off a diploma today (registrar,
+dean, examination office)? VERIFY with NU Office of the Registrar material (item 30) or an interview, and say
+which.
+Governance questions the paper should raise: who holds the governor role (ministry, consortium, university
+board); how keys are issued, rotated and revoked when staff leave; minimum staffing per role (Experiment C
+shows role availability is the main cost of policy D); delegation during leave.}
+
+\subsection{Personal data protection}
+\note{Law No.~94-V on Personal Data and Their Protection (item 28). Our design keeps names, IDs, grades and
+documents off-chain; only salted hashes, approver addresses and timestamps are public.
+VERIFY and discuss: whether a salted hash of personal data counts as personal data under the law; any data
+localization or cross-border transfer requirements (a public blockchain replicates data worldwide); the right
+to correction or deletion versus immutable records (revocation marks a commitment invalid but does not delete
+it). A permissioned chain operated in Kazakhstan is one alternative; name its trade-offs (fewer independent
+validators, operator trust).}
+
+\subsection{Deployment and operating costs}
+\note{Use the measured gas, not estimates: one issuance costs \GasTotalD{} gas under policy D
+(\GasTotalA{} under A); deploying the registry costs \GasDeployRegistry{} gas.
+Converting to money needs a gas price and an ETH/KZT rate. Take both from a dated, cited source, or present a
+range using \texttt{data/gas\_cost\_eth.csv} (whose gas prices are assumptions) and say so.
+Compare options qualitatively: Ethereum mainnet, a layer-2 network, a permissioned network. Also count
+non-gas costs: key management, staff training, integration with EPVO, audits.}
+
+\subsection{What blockchain cannot fix}
+\note{Garbage in, garbage out: if a fraudulent grade or a fake student record exists \emph{before} the proposal,
+every policy will faithfully issue it. Multi-party approval helps only if approvers actually check the source
+record. Policy D forces collusion across departments; it does not verify academic truth. Tie back to the
+threat model (falsified source records are out of scope).}

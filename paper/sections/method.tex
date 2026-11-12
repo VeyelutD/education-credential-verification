@@ -1,0 +1,22 @@
+\section{Evaluation Method}\label{sec:method}
+% Source: docs/EXPERIMENTS.md. Every parameter must appear here so a stranger can repeat the study.
+
+\subsection{Experiment A: insider-coalition exposure}
+\note{Enumerate all $2^7-1$ coalitions; success fraction$(k)$ = capable $k$-coalitions divided by
+$\binom{7}{k}$. Validation: every coalition outcome (8 policy variants $\times$ 127 coalitions) is executed
+against the deployed contracts and compared. Sensitivity: thresholds 3, 4 and 5. State clearly that this is a
+combinatorial measure, not a probability of fraud. If you use the i.i.d.\ compromise model
+(\texttt{coalition\_probability.csv}), state that assumption explicitly.}
+
+\subsection{Experiment B: gas}
+\note{Real transactions on a fresh local Anvil node per policy (hardfork Cancun, solc 0.8.24, optimizer 200
+runs). Gas is read from receipts. 10 issuances per policy with the minimal approver set; C and D use the same
+four signers. Verification is an \texttt{eth\_call}; report its gas estimate only for completeness. Tool
+versions and the measurement date are in \texttt{data/gas\_metadata.json}.}
+
+\subsection{Experiment C: availability and delay}
+\note{Monte Carlo with \Trials{} trials per scenario, seed \Seed{}, and common random numbers across policies.
+Give an assumptions table: LogNormal per-person delay (median 1 working day, $\sigma=0.75$); individual absence
+0--30\%; whole-role outage 0--10\%; deadline 5 working days; absent approvers are not replaced. Justify each
+parameter, or at least flag it as an assumption. Blockchain execution time is excluded here and reported in
+Experiment B.}

@@ -1,0 +1,18 @@
+\section{Discussion and Limitations}\label{sec:discussion}
+% Required by the course. Name the real weaknesses plainly.
+
+\note{Interpretation: role separation is a cheap filter on coalitions, not a stronger threshold. If the goal is
+a higher minimum number of insiders, raise the threshold. If the goal is to force collusion across departments,
+add role constraints, and plan for role availability (more than one holder per role, delegation rules).}
+
+\note{Limitations (see docs/THREAT\_MODEL.md and docs/EXPERIMENTS.md):
+(1) the governor is trusted; a compromised governor can add approver keys and satisfy any policy;
+(2) revocation is single-party, identical across policies by design;
+(3) only one 7-person configuration was studied; results depend on role sizes;
+(4) the coalition success fraction is not a fraud probability;
+(5) simulation parameters are assumptions, not measured NU workflows;
+(6) local Anvil only, no testnet or mainnet fees measured; gas prices in \texttt{gas\_cost\_eth.csv} are
+assumptions;
+(7) proposals never expire, and front-running griefing is possible;
+(8) blockchain cannot detect falsified source records;
+(9) metadata is public (approver addresses, timing).}

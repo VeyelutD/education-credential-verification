@@ -1,0 +1,30 @@
+\section{Background and Related Work}\label{sec:related}
+% Course rule: write this section yourselves. Organise by THEME and take a position; do not write one
+% paragraph per paper. Cite only papers you have opened; take BibTeX from DBLP or the publisher.
+
+\subsection{Blockchain academic credential systems}
+\note{Themes, not lists. Which systems use a single issuing account? Which use permissioned networks or node
+consensus? What do they assume about the honesty of the issuing employee? Candidates from your reading list:
+EduCTX, CredenceLedger, Leka \& Selimi, DIAR (Rustemi et al.), Educert-chain (Rani et al.),
+Cardenas-Quispe \& Pacheco, the IEEE Access systematic review, Al Hemairy et al.
+Kazakhstan: Shakan et al., Ussatova et al., Begimbayeva et al.}
+
+\subsection{Multi-party issuance in prior credential work}
+\note{The closest baselines. Verify the \emph{exact} mechanism before describing it.
+Lone \& Naaz (2020): is it really N-of-N multisignature?
+Sarwar et al.\ (2026): node-level majority consensus in MultiChain, which differs from employee-level approval.
+Tariq et al.\ (Cerberus): check its governance and issuance controls.
+Nousias et al.\ (2022): issuance as an institutional workflow.
+State plainly what these share and what none of them measures. That is your gap.}
+
+\subsection{Role-based access control and separation of duty}
+\note{RBAC foundations (Ferraiolo \& Kuhn 1992; Sandhu et al.\ 1996; the NIST model, 2000) and separation of
+duty (Kuhn 1997). Our design uses static separation of duty (one address, one role) plus an approval-time
+role-diversity constraint. Hyperledger Fabric endorsement policies already express role-aware AND/OR/threshold
+rules. Acknowledge this and position the contribution as \emph{measurement} in the credential setting, not as
+a new mechanism.}
+
+\subsection{Credential standards}
+\note{W3C Verifiable Credentials Data Model 2.0, Data Integrity 1.0 and Bitstring Status List: issuer, holder and
+verifier roles, and revocation. Our commitment-plus-status design is a minimal on-chain analogue. Say what it
+does not cover (selective disclosure, holder binding, DIDs).}

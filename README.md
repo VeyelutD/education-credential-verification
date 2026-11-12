@@ -15,10 +15,10 @@ majority-based policies in insider resistance, gas consumption and issuance avai
 | 1. Architecture & threat model | done: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md), [`docs/THREAT_MODEL.md`](docs/THREAT_MODEL.md) |
 | 2. Registry: issue / verify / revoke | implemented: `src/CredentialRegistry.sol` |
 | 3. Four approval policies | implemented: `src/policies/` |
-| 4. Foundry tests | written: `test/` (to be run) |
-| 5. End-to-end demo | `script/Demo.s.sol` |
-| 6–9. Experiments A/B/C, figures | todo: `experiments/` |
-| 10. Paper | todo: `paper/` |
+| 4. Foundry tests | 77 passing: `test/` |
+| 5. End-to-end demo | `script/Demo.s.sol` (verified on Anvil) |
+| 6–9. Experiments A/B/C, figures, tables | done: `experiments/`, results in [`docs/EXPERIMENTS.md`](docs/EXPERIMENTS.md) |
+| 10. Kazakhstan deployment discussion, paper | todo: `paper/` |
 
 ## Layout
 
@@ -31,24 +31,53 @@ src/
 test/
   utils/CredentialFixture.sol   synthetic NU: 2 Registrars, 3 Deans, 2 Exam Officers
   Registry.t.sol  Issuance.t.sol  Verification.t.sol  Revocation.t.sol  PolicySecurity.t.sol
+  HashParity.t.sol              Python commitments == Solidity commitments
+  experiments/CoalitionExport.t.sol   every coalition vs. the real contracts -> data/
 script/
   Deploy.s.sol                  deploy one policy + registry
   Demo.s.sol                    full lifecycle walkthrough
-experiments/  data/  figures/  paper/  docs/
+  GasBenchmark.s.sol            Experiment B workload (broadcast to Anvil)
+experiments/
+  common.py                     shared config: staff, policies, hashing, seed
+  credentials.py                synthetic diplomas/transcripts + commitments
+  coalition_analysis.py         Experiment A
+  gas_benchmark.py              Experiment B
+  availability_simulation.py    Experiment C
+  generate_figures.py           figures/ and paper/tables/
+  run_all.py                    reproduce everything
+  tests/                        pytest checks
+data/  figures/  paper/tables/  docs/
 ```
 
 ## Setup (from a clean clone)
 
 Requirements: Git, [Foundry](https://book.getfoundry.sh/getting-started/installation) (on Windows run
-`foundryup` from Git Bash or use WSL), and Python 3.11+ (for experiments, added later).
+`foundryup` from Git Bash or use WSL), and Python 3.11+.
 
 ```bash
-git clone https://github.com/VeyelutD/education-credential-verification.git
+git clone --recurse-submodules https://github.com/VeyelutD/education-credential-verification.git
 cd education-credential-verification
-forge install foundry-rs/forge-std@v1.9.4 OpenZeppelin/openzeppelin-contracts@v5.1.0
 forge build
-forge test -vv
+forge test
 ```
+
+Python environment (Git Bash on Windows; use `.venv/bin/activate` on Linux/macOS):
+
+```bash
+python -m venv .venv
+source .venv/Scripts/activate
+python -m pip install -r requirements.txt
+```
+
+## Reproduce all results
+
+```bash
+python experiments/run_all.py
+```
+
+This regenerates every CSV in `data/`, every figure in `figures/` and every table in `paper/tables/`
+(about 2–3 minutes; the gas step starts temporary Anvil nodes on port 8545). Use `--no-gas` to skip the
+Anvil step. Assumptions, methods and results are in [`docs/EXPERIMENTS.md`](docs/EXPERIMENTS.md).
 
 Pinned versions: solc 0.8.24 (EVM `cancun`, optimizer 200 runs), OpenZeppelin Contracts v5.1.0,
 forge-std v1.9.4, fuzz seed `0x435` (see `foundry.toml`).

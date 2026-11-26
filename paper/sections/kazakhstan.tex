@@ -1,53 +1,31 @@
-\section{Deployment in Kazakhstan: Nazarbayev University as a Hypothetical Case}\label{sec:kz}
-% Scope rules (from the project brief): NU does NOT use this system; blockchain records do NOT automatically
-% gain legal recognition. Every factual claim about EPVO, laws or NU procedures needs a primary source you
-% have opened (items 25-30 of your reading list). Items marked VERIFY are things we could not confirm.
+\section{Deployment in Kazakhstan: A Hypothetical Case}\label{sec:kz}
+We discuss how such a registry might relate to existing practice, with Nazarbayev University (NU) as a hypothetical institution. NU does not use this system, we have no data on its internal approval workflow, and recording a commitment does not by itself give a diploma legal recognition.
 
-\subsection{Existing verification infrastructure}
-\note{Describe the current national route for checking a diploma, from primary sources:
-the Unified Platform of Higher Education (EPVO, item 27) and the ministry's guidance on confirming diploma
-authenticity (item 26).
-VERIFY: who enters diploma records into EPVO (university staff? which role?), what an employer can check today
-and how, whether checks are public or require authorization, and how errors are corrected.
-If the anti-corruption report (item 25) documents issuer-side access problems or record discrepancies, quote it
-precisely. That evidence motivates the insider threat model.}
+\subsection{Existing infrastructure}
+The Unified Platform of Higher Education (EPVO) is a national database of the Ministry of Science and Higher Education covering institutions, programs, staff and students~\cite{epvo}. In August 2026 the Ministry described the current process: diplomas are generated in a special module that assigns a unique number and QR code, access is limited to officially responsible university staff registered in the module, and no number can be generated for a student without an EPVO record~\cite{kznews2026}. An employer can check a diploma at the EPVO portal using its number, its series and the holder's individual identification number, and may contact the university when no record is found~\cite{kzfaq}.
 
-\subsection{Complement, not replace}
-\note{Position the prototype as a tamper-evident \emph{audit and approval layer} beside EPVO:
-EPVO stays the authoritative record; the blockchain holds only salted commitments, so it records \emph{that} a
-credential was approved and by which roles, and makes later silent edits detectable.
-Possible integration points to discuss (as options, not claims): EPVO or the ministry as governor; EPVO
-publishing commitments for diplomas already in its database; employers verifying through EPVO with the
-on-chain status as an additional signal.
-Be explicit that a blockchain record alone has no legal standing as a diploma (Law on Education, item 29).}
+Two points follow. The weaknesses described in the 2023 report should not be presented as current practice, because the Ministry has since described restricted access. Restricting access does not necessarily divide authority, however. The public description does not say how many responsible employees must agree before a diploma is generated, and we do not know the internal rule. This is the question our policies address.
 
-\subsection{Registrar workflows and role governance}
-\note{Map the four policies onto plausible university workflows. Who signs off a diploma today (registrar,
-dean, examination office)? VERIFY with NU Office of the Registrar material (item 30) or an interview, and say
-which.
-Governance questions the paper should raise: who holds the governor role (ministry, consortium, university
-board); how keys are issued, rotated and revoked when staff leave; minimum staffing per role (Experiment C
-shows role availability is the main cost of policy D); delegation during leave.}
+\subsection{Complementing EPVO}
+EPVO would remain the authoritative register. A commitment registry could add independent evidence of who approved a record and when, and make later removal or change of that evidence visible. One option is that a university collects approvals in the registry before the EPVO module generates the number; another is that EPVO publishes commitments for diplomas it already holds, which would provide tamper evidence without multi-party approval. Either would need a decision by the Ministry and integration work that we have not done.
 
-\subsection{Personal data protection}
-\note{Law No.~94-V on Personal Data and Their Protection (item 28). Our design keeps names, IDs, grades and
-documents off-chain; only salted hashes, approver addresses and timestamps are public.
-VERIFY and discuss: whether a salted hash of personal data counts as personal data under the law; any data
-localization or cross-border transfer requirements (a public blockchain replicates data worldwide); the right
-to correction or deletion versus immutable records (revocation marks a commitment invalid but does not delete
-it). A permissioned chain operated in Kazakhstan is one alternative; name its trade-offs (fewer independent
-validators, operator trust).}
+Integration of this kind has been prototyped: Ussatova et al.\ describe an application that draws historical transcript and diploma data from the national platform, and note that the state data exchange they use does not verify grades, transcript entries or diploma numbers~\cite{ussatova2026b}.
 
-\subsection{Deployment and operating costs}
-\note{Use the measured gas, not estimates: one issuance costs \GasTotalD{} gas under policy D
-(\GasTotalA{} under A); deploying the registry costs \GasDeployRegistry{} gas.
-Converting to money needs a gas price and an ETH/KZT rate. Take both from a dated, cited source, or present a
-range using \texttt{data/gas\_cost\_eth.csv} (whose gas prices are assumptions) and say so.
-Compare options qualitatively: Ethereum mainnet, a layer-2 network, a permissioned network. Also count
-non-gas costs: key management, staff training, integration with EPVO, audits.}
+\subsection{Roles and governance}
+Mapping roles to a university is an institutional choice. Our example combines the registrar's office, schools and examination officers, similar in spirit to the suggestion in Cerberus~\cite{tariq2023}. With two examination officers, their simultaneous absence stops all issuance under D. Experiment D shows that a third holder largely solves individual absence, but not the closure of an office during an examination period. That case needs a formal rule for substitution between offices, and a substitute who acts for two roles weakens the separation.
 
-\subsection{What blockchain cannot fix}
-\note{Garbage in, garbage out: if a fraudulent grade or a fake student record exists \emph{before} the proposal,
-every policy will faithfully issue it. Multi-party approval helps only if approvers actually check the source
-record. Policy D forces collusion across departments; it does not verify academic truth. Tie back to the
-threat model (falsified source records are out of scope).}
+The governor is the most sensitive position. Options include the Ministry, a group of universities, or a multisignature account with a time delay; OpenZeppelin documents timelocks and multisignature owners for such cases~\cite{ozdocs}. Placing the governor inside the same office as the approvers would undo the separation.
+
+\subsection{Legal status}
+Under the Law on Education, documents of education are of state form, of an institution's own form, or issued by autonomous organizations of education, and documents of the last kind are treated as equal to state-form documents~\cite{kzedu}. Autonomous organizations determine the form of their own documents~\cite{kzedu}. Which category applies to a given institution would have to be confirmed before deployment. The Ministry states that own-form documents without a generated number and QR code are considered invalid~\cite{kznews2026}. An on-chain record therefore cannot replace the official procedure.
+
+\subsection{Personal data}
+The Law on Personal Data defines personal data as information about a subject supplemented by one or more identifiers, and defines an identifier broadly enough to include information that links data sets about a person~\cite{kzdata}. Four provisions bear directly on a public chain. Personal data must be stored in a database or digital object located in Kazakhstan (Article 12). Cross-border transfer is allowed to states that protect personal data, and otherwise in listed cases such as consent (Article 16). Data must be destroyed or deleted in listed cases (Article 18), and subjects may request changes and, in certain cases, deletion (Article 24)~\cite{kzdata}.
+
+The law mentions hashing as a method of protecting personal data, and separately defines anonymization as an irreversible transformation of identifiers after which attribution to a subject is impossible~\cite{kzdata}. In the provisions we read, we found no statement on whether a salted commitment is personal data. European guidance, which is not binding in Kazakhstan, is strict on this point: the European Data Protection Board states that a salted or keyed hash of personal data is itself considered personal data, while noting that after deletion of the salt or key the hash should not be linkable to the original data, provided that the algorithm is not broken and the salt did not leak~\cite{edpb2025}. The same guidelines say that unsalted hashes are in general not sufficient on a public blockchain, and that the lifetime of the chain should not be assumed to be an appropriate retention period (paragraphs 52 and 78)~\cite{edpb2025}. Our design follows the first point. It does not resolve the second: the registry has no deletion, so destroying the off-chain document and every copy of the salt is the only available measure, and a holder who keeps a copy cannot be made to destroy it. We therefore do not call commitments anonymous. If they are personal data, replication on foreign nodes raises the storage and transfer rules above. A permissioned network hosted in Kazakhstan could reduce part of this problem but would concentrate trust in its operators. Legal advice is required.
+
+\subsection{Cost}
+Deploying the registry costs \GasDeployRegistry{} gas, adding an approver about \GasAddApprover{}, and revocation \GasRevoke{}. Issuance under D costs \GasTotalD{} gas. The monetary cost depends on the gas price and exchange rate, which we did not measure. At illustrative prices of 0.5 and 30~gwei, one issuance would cost \EthLowD{} and \EthHighD{}~ETH. Key management, staff training and integration with EPVO are additional costs that gas figures do not show. Committing to several credentials in one Merkle root, as Cerberus does per batch~\cite{tariq2023}, would reduce cost per credential; we did not implement it.
+
+\subsection{What the system cannot prevent}
+If a false grade or student record already exists when the proposal is made, every policy can issue the resulting diploma. Multi-party approval helps only if approvers check the source record independently. If all of them trust the same database entry, four signatures may represent one error. The system shows who authorized a credential and not that its content is true.

@@ -1,26 +1,27 @@
 \section{Introduction}\label{sec:intro}
-% About 1 page. Write after the evaluation and related work.
+Employers and universities rely on diplomas they did not issue and often cannot check. Blockchain-based systems address part of this problem: the issuer registers a digest of the credential, and any later change to the document no longer matches the record. The guarantee is about integrity after registration. It says nothing about whether the registration itself was legitimate.
 
-\note{Paragraph 1 -- Problem. Diploma fraud and why verification matters (employers, other universities).
-Cite only sources you have opened (e.g.\ the 2023 national anti-corruption report, item 25 in your reading
-list, and only if it actually says what you claim).}
+That distinction matters when the attacker works for the issuer. Kazakhstan's national anti-corruption report for 2023 describes this situation. It states that about 2,600 university employees had been given rights to edit the national education database used to confirm diplomas, that a further 550 could generate diploma QR codes, and that such powers without effective control created risks of issuing forged diplomas~\cite{kzreport2023}. At 19 inspected universities, 2,733 people were listed in the database but absent from the universities' own records, and the database allowed graduates to be entered retroactively~\cite{kzreport2023}. The report also counts 1,143 diplomas whose issuance the institutions did not confirm~\cite{kzreport2023}; an unconfirmed diploma is not necessarily a forged one. A ledger's timestamps would expose retroactive entry. They would not expose a false entry submitted on time by an authorized account, which the ledger would preserve faithfully.
 
-\note{Paragraph 2 -- What blockchain does and does not give. It proves a record was registered by an authorized
-account and has not changed since. It cannot stop an authorized but dishonest or compromised employee from
-registering a fraudulent record.}
+Recent work on Kazakhstan recognizes the same risk. The system of Ussatova et al.\ treats university administrators as not fully trusted, because they may make errors, misuse privileges or be compromised~\cite{ussatova2026b}. Its answer is to authenticate, authorize and log their operations, and an account with the issuer role can register a record.
 
-\note{Paragraph 3 -- Gap: one specific sentence, supported by Section~\ref{sec:related}.
-Candidate wording, to \emph{verify against the papers before using}: ``Existing blockchain credential systems
-authorize issuance through a single institutional account or through node-level consensus; we are not aware of
-work that measures, under a common threshold, how employee-level role-separation constraints change
-insider-coalition exposure, gas cost and issuance availability.''
-Check Lone \& Naaz (2020), Sarwar et al.\ (2026), Cerberus (2023) and Nousias et al.\ (2022) first.}
+The usual response to misuse of authority is separation of duty: no single person can complete a sensitive task~\cite{ferraiolo1992}. Credential systems have adopted parts of this idea through multisignature issuance~\cite{lone2020}, majority voting by nodes~\cite{sarwar2026} and quorums of registrars~\cite{saramago2021}. The idea we evaluate is not new: Cerberus already proposes that a registrar and an examination department should both sign~\cite{tariq2023}, and policies that combine team size with qualifications have been formalized in general~\cite{li2008}. The credential designs differ in threshold, in who may sign and in platform, so their published evaluations do not show what a role requirement adds beyond a larger number of signatures, or what it costs.
 
-\note{Paragraph 4 -- Research question and sub-questions.
-RQ: How do role-constrained approval policies compare with single-issuer, unanimous and threshold policies in
-insider resistance, gas consumption and issuance availability?
-SQ1: coalition exposure. SQ2: gas per completed issuance. SQ3: delay and availability under absence.}
+\textbf{Gap.} In the work we reviewed, we found no evaluation that holds one credential contract, university and approval threshold fixed and measures how adding a role requirement changes insider-coalition exposure, gas consumption and issuance availability together.
 
-\note{Paragraph 5 -- Contributions (bullet list): (i) open-source registry with four interchangeable policies
-and an identical lifecycle; (ii) exhaustive coalition analysis cross-checked against the deployed contracts;
-(iii) receipt-based gas comparison; (iv) availability simulation; (v) Kazakhstan deployment discussion.}
+\textbf{Research question.} How do role-constrained approval policies compare with single-issuer, unanimous and threshold policies in insider resistance, gas consumption and credential issuance availability? We divide it into three sub-questions:
+\begin{itemize}
+\item \textbf{SQ1.} Which coalitions of compromised employees can issue a credential under each policy?
+\item \textbf{SQ2.} How much gas does one completed issuance consume?
+\item \textbf{SQ3.} How do employee absence and delay affect whether and when a credential is issued?
+\end{itemize}
+
+\textbf{Contributions.} The individual mechanisms are known. Our contribution is a controlled comparison of them:
+\begin{itemize}
+\item a registry with four interchangeable approval policies and an identical credential lifecycle;
+\item an exhaustive coalition analysis in which all 1,016 outcomes were also executed against the contracts;
+\item a gas comparison from receipts, with the threshold and signers held equal for the two policies of main interest;
+\item a simulation of absence and delay, together with the exact number of absences that blocks each policy;
+\item an exact study of other staffings and of collusion correlated within offices; and
+\item a discussion of deployment beside Kazakhstan's existing verification platform.
+\end{itemize}

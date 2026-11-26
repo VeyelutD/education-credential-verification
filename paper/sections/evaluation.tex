@@ -1,30 +1,31 @@
 \section{Results}\label{sec:results}
-% Write this section FIRST. Use the macros (e.g. \CoalDkFour) instead of typing numbers.
 
-\subsection{Insider-coalition exposure}
+\subsection{Coalition exposure (SQ1)}
 \begin{figure}[t]
 \centering
 \includegraphics[width=\columnwidth]{fig_coalition}
-\caption{Fraction of $k$-employee coalitions able to issue a credential without any honest approval.}
+\caption{Fraction of $k$-employee coalitions able to issue without any honest approval.}
 \label{fig:coalition}
 \end{figure}
 
 \begin{figure*}[t]
 \centering
 \includegraphics[width=0.85\textwidth]{fig_coalition_sensitivity}
-\caption{Threshold policy (C) versus role-constrained policy (D) at thresholds 3, 4 and 5.}
+\caption{Threshold policy C and role-constrained policy D at thresholds 3, 4 and 5.}
 \label{fig:coalition-sensitivity}
 \end{figure*}
 
 \input{tables/table_coalition}
 
-\note{Key facts to explain in your own words. Under A, a single insider suffices (\CoalAkOne{} of the single
-employees). At threshold 4, role constraints leave the minimum coalition size unchanged (4) but reduce capable
-4-person coalitions from \CoalCkFour{} to \CoalDkFour{} (\CoalDkFourFrac). The effect is larger at threshold 3
-(\CoalCthreekThree{} vs.\ \CoalDthreekThree) and nearly vanishes at 5 (\CoalCfivekFive{} vs.\
-\CoalDfivekFive). Why: with more required approvers, almost every coalition already spans all roles.}
+Fig.~\ref{fig:coalition} and Table~\ref{tab:coalition} show the main result. Under A, two of the seven employees can each issue alone (\CoalAkOne{}). Under B, only the complete set of seven can. C blocks all coalitions of up to three and permits every coalition of four or more.
 
-\subsection{Gas consumption}
+D has the same minimum coalition size as C. What changes is the composition: \CoalDkFour{} of the four-person coalitions succeed ($f(4)=\CoalDkFourFrac$), against \CoalCkFour{} under C. The \BlockCoalExcluded{} rejected coalitions lack a registrar (5), a dean (1) or an examination officer (5). At $k=5$, D rejects the one coalition without a registrar and the one without an examination officer. From $k=6$ onward every coalition contains all three roles, and the policies coincide.
+
+Fig.~\ref{fig:coalition-sensitivity} shows that the effect depends on the threshold. At a threshold of 3, three-person coalitions fall from \CoalCthreekThree{} to \CoalDthreekThree{}, because a successful coalition must contain exactly one person per role. At a threshold of 5 the change is only from \CoalCfivekFive{} to \CoalDfivekFive{}. A role requirement thus adds most where the threshold is low. At no tested threshold did it increase the minimum number of insiders.
+
+Under the independent-compromise assumption with $p=0.1$, the probability that the compromised set can issue is \ProbTenA{} for A, $10^{-7}$ for B, \ProbTenC{} for C and \ProbTenD{} for D. With $p=0.3$ it is \ProbThirtyA{}, \ProbThirtyB{}, \ProbThirtyC{} and \ProbThirtyD{}. Section~\ref{sec:corrresults} relaxes independence.
+
+\subsection{Gas consumption (SQ2)}
 \begin{figure}[t]
 \centering
 \includegraphics[width=\columnwidth]{fig_gas}
@@ -34,40 +35,70 @@ employees). At threshold 4, role constraints leave the minimum coalition size un
 
 \input{tables/table_gas}
 
-\note{Totals: A \GasTotalA, B \GasTotalB, C \GasTotalC, D \GasTotalD{} gas. The role check costs
-\GasRoleOverhead{} gas (\GasRoleOverheadPct) per issuance, all in finalization (\GasFinalizeC{} vs.\
-\GasFinalizeD). Cost scales with the number of approvals (\GasApproveEach{} gas each), not with the policy
-logic.}
+One issuance costs \GasTotalA{} gas under A, \GasTotalC{} under C, \GasTotalD{} under D and \GasTotalB{} under B (Table~\ref{tab:gas}, Fig.~\ref{fig:gas}). The main driver is the number of approvals, at about \GasApproveEach{} gas each. Unanimity costs \RatioBA{} times as much as a single issuer.
 
-\subsection{Availability and delay}
+The role check adds \GasRoleOverhead{} gas per issuance, or \GasRoleOverheadPct{}. It occurs entirely in finalization, where D uses \GasFinalizeD{} gas and C uses \GasFinalizeC{}. The registry already counts approvals per role for every policy, so C carries some bookkeeping that a threshold-only contract would not need. The overhead we report is therefore that of the policy check within our modular design, and a specialized threshold contract could be cheaper. Deploying the policy contract costs \DeployPolicyD{} gas for D and \DeployPolicyC{} for C, once.
+
+Table~4.1 of Lone and Naaz reports \LoneSign{} gas for a signature and \LoneAdd{} for adding a certificate~\cite{lone2020}. Seven signatures and one insertion would sum to \LoneSeven{} gas, compared with \GasTotalB{} for our B. The sum is our arithmetic and assumes constant cost per signature. Their contract stores different data and was published in 2020, under other EVM gas rules, so we read this only as agreement in order of magnitude. ShikkhaChain, as another reference, reports about 1.29 million gas to issue a certificate~\cite{farabi2025}; its workload also differs.
+
+\subsection{Availability and delay (SQ3)}
 \begin{figure*}[t]
 \centering
 \includegraphics[width=0.85\textwidth]{fig_availability}
-\caption{Left: credentials issued within 5 working days versus individual absence. Right: credentials that can
-be issued at all versus the probability that an entire role is unavailable (10\% individual absence).
-Simulated.}
+\caption{Simulated issuance. Left: issued within 5 working days against individual absence. Right: able to complete against whole-role outage, with 10\% individual absence.}
 \label{fig:availability}
 \end{figure*}
 
 \begin{figure*}[t]
 \centering
 \includegraphics[width=0.85\textwidth]{fig_delay}
-\caption{Median and 95th-percentile simulated issuance delay of completed issuances.}
+\caption{Simulated delay of completed issuances. The low variation of B arises because only fully attended cases complete.}
 \label{fig:delay}
 \end{figure*}
 
 \input{tables/table_availability}
 
-\note{At 10\% absence, on-time issuance is A \OnTimeA, B \OnTimeB, C \OnTimeC, D \OnTimeD. D's extra failures
-are caused by a missing role (\MissingRoleD{} of trials). Under a 5\% whole-role outage, D completes
-\OutageFiveD{} versus \OutageFiveC{} for C (at 10\%: \OutageTenD{} versus \OutageTenC). Unanimous is
-impractical (\CompleteB{} completion).}
+The smallest blocking absence is exact and needs no simulation. One absent employee blocks B (any of \BlockSetsB{}). Two absences can block A, if both are registrars, and two can block D, if both are registrars or both are examination officers. C is blocked only by \BlockC{} absences. The role requirement thus halves the smallest blocking absence relative to C, although only \BlockSetsD{} particular pairs suffice.
 
-\subsection{Security--cost--availability trade-off}
+\input{tables/table_ks}
+
+Table~\ref{tab:ks} states this in the terms of Li et al.~\cite{li2009}: $k$ is the smallest capable coalition and $s$ the number of absences that a policy always tolerates. For role-agnostic thresholds, $k+s=7$, so each additional required approver removes one tolerated absence. Adding the role requirement leaves $k$ unchanged and lowers $s$ to 1 at every tested threshold, because two roles have only two holders. By $(k,s)$ alone D is therefore worse than C at each threshold. Its benefit is visible only in the last column, which the pair does not capture: fewer of the coalitions of size $k$ are capable.
+
+The simulation shows the same pattern (Table~\ref{tab:availability}, Fig.~\ref{fig:availability}). With 10\% individual absence, on-time issuance is \OnTimeA{} for A, \OnTimeB{} for B, \OnTimeC{} for C and \OnTimeD{} for D. In \MissingRoleD{} of trials D fails because of a missing role. Correlated absence matters more. When each role is entirely unavailable with probability 5\%, D completes \OutageFiveD{} of issuances and C \OutageFiveC{}; at 10\% the figures are \OutageTenD{} and \OutageTenC{}.
+
+Median delay for completed issuances is \MedianDelayA{} days for A, \MedianDelayC{} for C, \MedianDelayD{} for D and \MedianDelayB{} for B; the 95th percentiles are \PninetyfiveDelayA{}, \PninetyfiveDelayC{}, \PninetyfiveDelayD{} and \PninetyfiveDelayB{} (Fig.~\ref{fig:delay}). B waits for the slowest of seven people, and its delay is nearly flat only because incomplete cases are excluded.
+
+As a check on the simulator, A should complete with probability $1-0.1^2=\ExactA$ and B with $0.9^7=\ExactB$ at 10\% absence. The simulated values are \CompleteA{} and \CompleteB{}.
+
+\subsection{Other staffings}
+\input{tables/table_config}
+
+Table~\ref{tab:config} extends the comparison. The role requirement never changes $k$ and always lowers $s$. Because D is blocked when its smallest role is absent, $s$ is one less than the size of that role, in all configurations we tried. Going from 2-3-2 to 3-3-3 raises it from 1 to 2.
+
+Larger roles nearly remove the loss from individual absence: D completes \CfgPrimD{} of issuances with 2-3-2 and \CfgDelegD{} with 3-3-3 at the same threshold. They do not remove the loss from whole-role outages. D needs all three roles, so its completion cannot exceed $0.95^3=\OutageBound$ when each role fails with probability 5\%, and every configuration is close to this bound. More holders protect against individuals being away and not against an office being away.
+
+The capable fraction depends on how the threshold is chosen. With majority thresholds it is higher in every larger university we tried, between \CfgFracMin{} and \CfgFracMax{} against \CoalDkFourFrac{}, because most large coalitions contain every role. The role requirement therefore filters less as universities grow, at least under uniform counting. Adding delegates while keeping the threshold at 4 gives \CfgDelegFrac{}, close to the primary \CoalDkFourFrac{}; the number of capable four-person coalitions rises from \CfgPrimCount{} to \CfgDelegCount{}. Delegates thus buy resilience with more ways to collude.
+
+\subsection{Correlated collusion}\label{sec:corrresults}
+\begin{figure*}[t]
+\centering
+\includegraphics[width=0.85\textwidth]{fig_correlation}
+\caption{Primary university. Left: probability that the compromised set can issue against within-office correlation, $p=0.1$. Right: break-even weight $w$. Exact, under the assumptions of Section~\ref{sec:correlation}.}
+\label{fig:correlation}
+\end{figure*}
+
+Fig.~\ref{fig:correlation} shows that the value of roles depends strongly on how people collude. At $p=0.1$ and $\rho=0$, D lowers the probability from \CorCZero{} to \CorDZero{}, a reduction of \CorRedZero{}. At $\rho=0.5$ it lowers it from \CorCHalf{} to \CorDHalf{} (\CorRedHalf{}), and at $\rho=1$ from \CorCOne{} to \CorDOne{} (\CorRedOne{}). The last case has a simple form: with whole offices captured, C falls when any two offices fall and D only when all three do.
+
+D's own probability is not monotonic in $\rho$. At $p=0.1$ it rises to about \PeakValTen{} near $\rho=\PeakTen$ and then falls. Two effects oppose each other. D needs a compromised person in all three offices and a fourth person. Correlation makes it more likely that a compromised office contributes several people, which supplies the fourth. It also makes it less likely that any given office contains a compromised person: that probability is $\rho p+(1-\rho)(1-(1-p)^n)$ for an office of $n$, which falls towards $p$ as $\rho$ grows. The first effect dominates at low $\rho$ and the second at high $\rho$. C can be satisfied by people from two offices, so the second effect is weaker for it, and its probability rises over the whole range at all three values of $p$. The relative reduction therefore grows even where D's absolute probability increases.
+
+The break-even weight depends on $p$ as much as on $\rho$, so no single value describes it. Under independence it is \BreakFiveZero{} at $p=0.05$, \BreakTenZero{} at $p=0.1$ and \BreakTwentyZero{} at $p=0.2$. At $\rho=0.5$ the values are \BreakFiveHalf{}, \BreakTenHalf{} and \BreakTwentyHalf{}, and at $\rho=1$ they are \BreakFiveOne{}, \BreakTenOne{} and \BreakTwentyOne{}. D is easier to justify when compromise is more likely or more concentrated inside offices, and hardest when it is rare and independent. Collusion across the whole university limits the benefit: with $\gamma=0.02$ the reduction at $\rho=1$ is \CorRedOneGamma{}, because roles cannot stop a group that spans every office.
+
+\subsection{Trade-off}
 \begin{figure}[t]
 \centering
-\includegraphics[width=\columnwidth]{fig_tradeoff}
-\caption{Coalition exposure at $k=4$ versus gas per issuance; labels give on-time issuance at 10\% absence.}
-\label{fig:tradeoff}
+\includegraphics[width=\columnwidth]{fig_ks}
+\caption{Insiders needed ($k$) against absences always tolerated ($s$), primary university. Percentages give the capable share of coalitions of size $k$. Role-agnostic thresholds and unanimity lie on the line $k+s=7$.}
+\label{fig:ks}
 \end{figure}
-\note{One paragraph that answers the research question directly. No policy dominates on all three axes.}
+
+Fig.~\ref{fig:ks} combines security and resilience. Points further right need more insiders and points further up tolerate more absences. A is weakest on $k$. B has the highest $k$ and tolerates no absence. The thresholds of C lie on the line $k+s=7$. Every D point lies below the C point with the same $k$: it gives up tolerated absences and gains a smaller capable share. Gas does not separate C and D. No policy is best on all measures.

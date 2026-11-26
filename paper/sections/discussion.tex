@@ -1,18 +1,23 @@
 \section{Discussion and Limitations}\label{sec:discussion}
-% Required by the course. Name the real weaknesses plainly.
 
-\note{Interpretation: role separation is a cheap filter on coalitions, not a stronger threshold. If the goal is
-a higher minimum number of insiders, raise the threshold. If the goal is to force collusion across departments,
-add role constraints, and plan for role availability (more than one holder per role, delegation rules).}
+\subsection{Interpretation}
+Counting approvers and constraining their roles protect against different things. Raising the threshold increases the number of people who must collude. A role requirement restricts which groups are sufficient and forces collusion across offices. Counting treats every employee as equally easy to compromise. Experiment E shows why this matters: the stronger the correlation inside offices, the more D removes, because it refuses groups drawn from two offices. Collusion that spans all offices removes the advantage. We have no data on which pattern occurs, so the choice between C and D rests on a judgement about collusion that our experiments make explicit but cannot settle.
 
-\note{Limitations (see docs/THREAT\_MODEL.md and docs/EXPERIMENTS.md):
-(1) the governor is trusted; a compromised governor can add approver keys and satisfy any policy;
-(2) revocation is single-party, identical across policies by design;
-(3) only one 7-person configuration was studied; results depend on role sizes;
-(4) the coalition success fraction is not a fraud probability;
-(5) simulation parameters are assumptions, not measured NU workflows;
-(6) local Anvil only, no testnet or mainnet fees measured; gas prices in \texttt{gas\_cost\_eth.csv} are
-assumptions;
-(7) proposals never expire, and front-running griefing is possible;
-(8) blockchain cannot detect falsified source records;
-(9) metadata is public (approver addresses, timing).}
+The gas results suggest that, once several people must approve, cost gives little reason to avoid a role requirement in a design like ours. Availability does. The choice between C and D is mainly one between forcing cross-office collusion and tolerating the absence of a whole office. Measured only by the pair $(k,s)$ of Li et al.~\cite{li2009}, adding roles at our primary threshold costs resilience and gains nothing (Table~\ref{tab:ks}). An institution should therefore adopt them only if it believes that collusion across offices is materially harder than collusion within them. Cerberus makes this assumption when it argues that bribing several disassociated parties requires more effort~\cite{tariq2023}; neither that work nor ours tests it. Additional holders of each role help with individual absence but not with the absence of an office, for which a rule such as substitution between offices would be needed. Such a rule weakens the separation.
+
+Unanimity looks strongest on exposure alone. It requires that nobody be absent, and it gives every approver a veto, so a single dishonest or careless employee can stop all issuance.
+
+\subsection{Limitations}
+\begin{itemize}
+\item \textbf{Trusted governor.} A compromised governor can register approvers and satisfy any policy. This is the largest gap between the prototype and a deployable system.
+\item \textbf{Configurations.} Gas and delay were measured only for 2-3-2. Other staffings were studied exactly for coalitions and completion, always with three roles and one required approver per role.
+\item \textbf{Counting is not risk.} The success fraction is not a probability of fraud, and the correlation model uses assumed parameters, equal compromise probabilities and one simple form of dependence.
+\item \textbf{Assumed workflow.} Delays, absence and outages are assumed. The ordering of policies is more informative than the percentages. Quality of human review is not modeled.
+\item \textbf{Local measurements.} Gas comes from a local Anvil node. No public testnet or mainnet was used, and no fees or confirmation times were measured.
+\item \textbf{Modular overhead.} All policies pay for the same role bookkeeping and external policy call, which favors comparability over minimal gas.
+\item \textbf{Revocation.} One registrar or the governor can revoke.
+\item \textbf{Pending proposals.} Proposals do not expire. An insider can repeatedly propose a commitment and cancel before anyone else approves; each attempt costs gas and is recorded, and one honest approval ends it. Another registered university could propose a visible commitment first and block it. The issuer check prevents false acceptance but not this denial of service.
+\item \textbf{Metadata.} Approver addresses and times are public and reveal issuance patterns.
+\item \textbf{Verification of the code.} The contracts have unit, fuzz and exhaustive coalition tests but no external audit or formal proof.
+\item \textbf{Literature coverage.} Our search was not systematic. Several relevant papers were not accessible in full and are not cited, so the gap statement applies to the work we reviewed. For some cited works only the abstract was consulted.
+\end{itemize}

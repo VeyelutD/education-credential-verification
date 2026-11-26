@@ -1,22 +1,50 @@
 \section{Evaluation Method}\label{sec:method}
-% Source: docs/EXPERIMENTS.md. Every parameter must appear here so a stranger can repeat the study.
+Experiments A to C use the same seven-person university and policy definitions; D and E vary the staffing and the dependence between insiders. Solidity 0.8.24 was compiled with the optimizer at 200 runs for the Cancun EVM version. The tests and scripts use Foundry~\cite{foundry} and forge-std~\cite{forgestd}.
 
-\subsection{Experiment A: insider-coalition exposure}
-\note{Enumerate all $2^7-1$ coalitions; success fraction$(k)$ = capable $k$-coalitions divided by
-$\binom{7}{k}$. Validation: every coalition outcome (8 policy variants $\times$ 127 coalitions) is executed
-against the deployed contracts and compared. Sensitivity: thresholds 3, 4 and 5. State clearly that this is a
-combinatorial measure, not a probability of fraud. If you use the i.i.d.\ compromise model
-(\texttt{coalition\_probability.csv}), state that assumption explicitly.}
+\subsection{Experiment A: coalition exposure}
+There are $2^7-1=127$ non-empty employee coalitions. A coalition is capable if the approvals of its members alone satisfy the policy. For each size $k$ we report
+\begin{equation}
+f(k)=\frac{\text{capable coalitions of size }k}{\binom{7}{k}} .
+\end{equation}
+We repeat the enumeration for C and D with thresholds 3 and 5, giving eight policy variants. Each of the $8\times127=1{,}016$ outcomes was also produced by running the proposal, approvals and finalization against the contracts. The Python and contract results agree in every case. The counts are elementary combinatorics: for D with $m=4$, inclusion and exclusion give $\binom{7}{4}-\binom{5}{4}-\binom{4}{4}-\binom{5}{4}=24$. Running the contracts shows that they implement the rules. It is not evidence about how often fraud occurs.
+
+The fraction $f(k)$ counts coalitions and is not a probability of fraud: it says nothing about how likely a coalition is to form. Separately, we report the probability that the compromised set can issue if each employee is compromised independently with probability $p$. Independence is an assumption and is doubtful where colleagues influence each other.
+
+We also compute the smallest number of absent employees that makes a policy unsatisfiable. Because absent approvers remain registered, B still requires all seven.
 
 \subsection{Experiment B: gas}
-\note{Real transactions on a fresh local Anvil node per policy (hardfork Cancun, solc 0.8.24, optimizer 200
-runs). Gas is read from receipts. 10 issuances per policy with the minimal approver set; C and D use the same
-four signers. Verification is an \texttt{eth\_call}; report its gas estimate only for completeness. Tool
-versions and the measurement date are in \texttt{data/gas\_metadata.json}.}
+Each policy was deployed on a fresh local Anvil node with the Cancun hardfork. Ten credentials were issued under each, and gas was read from the transaction receipts. Issuance includes the proposal, the remaining approvals and finalization. C and D use the same four signers: one registrar, two deans and one examination officer. Two complete runs of the benchmark gave identical gas values. Verification is a free call; we list its gas estimate only for reference.
 
 \subsection{Experiment C: availability and delay}
-\note{Monte Carlo with \Trials{} trials per scenario, seed \Seed{}, and common random numbers across policies.
-Give an assumptions table: LogNormal per-person delay (median 1 working day, $\sigma=0.75$); individual absence
-0--30\%; whole-role outage 0--10\%; deadline 5 working days; absent approvers are not replaced. Justify each
-parameter, or at least flag it as an assumption. Blockchain execution time is excluded here and reported in
-Experiment B.}
+We simulate human response only, with \Trials{} trials per scenario and seed \Seed{}. All policies are evaluated on the same random draws. Table~\ref{tab:assumptions} gives the parameters. They are illustrative assumptions and not measurements from any university. Every employee, including the proposer, responds after an independent delay. Issuance completes at the earliest time when the received approvals satisfy the policy. Absent employees do not respond within the window, and nobody replaces or deactivates them.
+
+\begin{table}[t]
+\centering\small
+\caption{Simulation assumptions.}
+\label{tab:assumptions}
+\begin{tabular}{ll}
+\toprule
+Parameter & Value\\
+\midrule
+Response delay & lognormal, median 1 day, $\sigma=0.75$\\
+Individual absence & 0--30\%, baseline 10\%\\
+Whole-role outage & 0, 5, 10\% per role\\
+Deadline & 5 working days\\
+Trials & \Trials{} per scenario\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+A failure is attributed to a missing role when at least the threshold number of employees is present but a required role is not. All other failures of D count as too few people. Delay statistics cover completed issuances only and must be read with the completion rate. Blockchain confirmation time is not part of the simulation. Completion rates also have an exact form, obtained by summing over the number of people present in each role, and the simulated rates agree with it; the simulation is needed for the delays.
+
+\subsection{Experiment D: other staffings}
+We compute $k$, $s$, the capable fraction and the exact completion probability for six combinations of staffing and threshold. Thresholds are strict majorities, with one exception: 3-3-3 with threshold 4, which represents the primary university after adding one delegate registrar and one delegate examination officer as permanent holders. Delegates who are activated only during an absence are not modeled, since activation depends on the governor. For 3-3-3 at both thresholds, all 511 coalitions were also run against the contracts.
+
+\subsection{Experiment E: correlated collusion}\label{sec:correlation}
+Let each employee be compromised with probability $p$. With probability $\rho$ an office is captured as a block, so that its members share one draw; otherwise they are independent. Any two members of an office then have correlation $\rho$, and $\rho=0$ is the independent model. Offices are independent of each other. In a variant the whole university shares one draw with probability $\gamma=0.02$. The results are exact, and all parameters are assumptions.
+
+Every coalition capable under D is also capable under C, so D never has the higher probability $F$ that the compromised set can issue. It completes fewer issuances. We therefore report the break-even weight
+\begin{equation}
+w=\frac{A_C-A_D}{F_C-F_D},
+\end{equation}
+where $A$ is the completion probability with 10\% individual absence and 5\% whole-role outage. A capable compromised set must be considered $w$ times as bad as a blocked issuance before D is preferable. The two events differ in kind and in time scale, so $w$ is an aid to judgement and not a measured cost.

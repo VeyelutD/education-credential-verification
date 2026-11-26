@@ -1,49 +1,49 @@
 \section{System Design}\label{sec:design}
-% Source of truth: docs/ARCHITECTURE.md, docs/THREAT_MODEL.md and src/. Describe in your own words.
 
 \subsection{Architecture}
-\note{A shared \texttt{CredentialRegistry} plus stateless \texttt{IApprovalPolicy} implementations. The policy is
-\texttt{immutable}, so it cannot be downgraded. Only issuance authorization differs between policies; the
-credential format, storage, lifecycle, revocation and events are identical. Consider a small architecture
-figure (draw it yourselves, e.g.\ in TikZ).}
+The system consists of a \texttt{CredentialRegistry} and one policy contract. The registry holds universities, approvers, proposals, approvals and credential status. A policy is stateless and answers two questions: whether a role may take part, and whether a given set of valid approvals authorizes issuance. The policy receives the number of valid approvals per role, their total, and the number of eligible active approvers.
 
-\subsection{Actors and roles}
-\note{Governor (manages universities and approvers, has no issuance power, cannot be an approver); approvers
-with exactly one role each (Registrar, Dean, Exam Officer); verifier; holder. Static separation of duty.}
+The policy address is immutable and set at deployment, so an administrator cannot replace a strict rule by a weak one. Every policy uses the same registry code, which makes the authorization rule the only intended difference between deployments. The registry uses \texttt{AccessControl} from OpenZeppelin Contracts~\cite{openzeppelin2024,ozdocs}; the remaining contract logic was written for this project.
+
+\subsection{Actors}
+The \emph{governor} registers universities, assigns approvers and roles, and activates or deactivates them. It has no function that proposes, approves or finalizes a credential. The registry refuses to make a governor an approver and refuses to grant governor rights to an approver. \emph{Approvers} are employees of one university with exactly one role: registrar, dean or examination officer. The \emph{holder} keeps the document and a salt off-chain. A \emph{verifier} needs no account, because verification is a read.
 
 \subsection{Credential commitment}
-\note{Give the exact procedure:
-$c = \mathrm{keccak256}(\mathrm{abi.encode}(\mathit{DOMAIN}, \mathrm{keccak256}(\mathit{canonicalJSON}), \mathit{salt}))$,
-with a 32-byte random salt held by the graduate and
-$\mathit{DOMAIN}=\mathrm{keccak256}(\texttt{KZ-ACADEMIC-CREDENTIAL-v1})$.
-Explain why the salt is needed (low-entropy fields) and why the verifier must cross-check the issuer named in
-the document. Mention the Python--Solidity parity test over 50 synthetic credentials.}
+A credential is a JSON document with sorted keys, no insignificant whitespace and UTF-8 encoding. Let $d$ be these bytes, $s$ a random 32-byte salt and $H$ the Keccak-256 hash. The commitment is
+\begin{equation}
+c = H(\mathrm{abi.encode}(D, H(d), s)),
+\end{equation}
+where $D$ is the hash of a fixed domain string and separates these commitments from other uses of the hash. Names, grades and identifiers stay off-chain. The salt is needed because names, degrees and dates are guessable, so an unsalted digest could be tested against candidate documents. The registry stores the commitment, university, status, proposer, timestamps, approvals and a revocation code.
 
-\subsection{Lifecycle and verification states}
-\note{None $\rightarrow$ Pending $\rightarrow$ Issued $\rightarrow$ Revoked; Cancelled burns the commitment.
-The verifier sees NotFound, Pending, Valid or Revoked, plus the issuer and an issuer-active flag.}
+A verifier recomputes $c$ from the disclosed document and salt. The credential is accepted only if the status is valid and the registered university matches the issuer named in the document. The second check is necessary: the contract cannot read the document, so a different registered university could otherwise register the same commitment. Our Python and Solidity implementations were checked against each other on 50 synthetic credentials.
+
+\subsection{Lifecycle}
+A commitment is proposed, approved and finalized, and may later be revoked. The proposal counts as the proposer's approval. Any eligible approver of the same university may finalize once the policy is satisfied. The governor can cancel a proposal. Its proposer can do so only while nobody else has approved. A cancelled commitment may be proposed again in a new round, and approvals are stored per round, so none carry over. An earlier version of the contract made cancelled commitments unusable; one employee could then have blocked a credential permanently by proposing it first and cancelling, and we keep a test for this attack. The verifier distinguishes four results: not found, pending, valid and revoked. A changed document produces a different commitment and is reported as not found.
+
+Approvals may become stale while a proposal is pending. Each approver therefore has a counter that increases whenever the role or active status changes. An approval stores the counter value and counts at finalization only if the approver is active and the value is unchanged. After a change of role, the employee must approve again in the new role. Reactivation does not restore an earlier approval.
 
 \subsection{Approval policies}
+Table~\ref{tab:policies} lists the four policies. C and D share the threshold of four, so their comparison isolates the role requirement. Under A only registrars may participate. Under B the required number is evaluated at finalization; if the governor deactivates an approver, that number falls.
+
 \begin{table}[t]
 \centering\small
-\caption{Approval policies compared (university with 2 Registrars, 3 Deans and 2 Exam Officers).}
+\caption{Approval policies for a university with 2 registrars, 3 deans and 2 examination officers.}
 \label{tab:policies}
 \begin{tabular}{lll}
 \toprule
-Policy & Eligible roles & Rule at finalization\\
+Policy & Eligible & Rule at finalization\\
 \midrule
-A Single issuer & Registrar & $\geq 1$ valid approval\\
-B Unanimous & all & all $N=7$ active approvers\\
-C Threshold & all & $\geq 4$ valid approvals\\
-D Role-constrained & all & $\geq 4$ and $\geq 1$ per role\\
+A Single issuer & Registrar & at least 1\\
+B Unanimous & all & all 7 active\\
+C Threshold & all & at least 4\\
+D Role-constrained & all & at least 4, one per role\\
 \bottomrule
 \end{tabular}
 \end{table}
-\note{Explain why C and D share the threshold: it isolates the effect of role separation. Explain the
-approver-nonce rule: any role change or (de)activation invalidates that approver's pending approvals, and
-validity is re-checked at finalization.}
 
-\subsection{Threat model}
-\note{In-scope adversaries: a single insider, a $k$-coalition, an outsider, a document tamperer. Trusted: the
-governor. Out of scope: falsified source records. List each enforced property with the test that checks it
-(unauthorized issuance, duplicate issuance or approval, approval reuse, administrative bypass).}
+\subsection{Threat model}\label{sec:threat}
+The adversary controls the keys of $k$ employees and tries to make the registry report a fraudulent credential as valid. All other employees refuse to approve it. We also consider outsiders, employees of other universities, and holders who alter documents. Automated tests cover unauthorized calls, duplicate proposals and approvals, reuse of approvals for another credential, stale approvals, and attempts by the governor to issue directly.
+
+Four assumptions limit the result. First, each key is held by a different person. Second, the governor is honest: a compromised governor could register new approvers and satisfy any policy. Third, honest approvers examine the source record before signing. Fourth, the underlying chain behaves correctly. False grades or student records that exist before the proposal are out of scope.
+
+Revocation is deliberately the same under every policy and needs only one registrar or the governor. One dishonest registrar can therefore invalidate a genuine credential. This is denial of service to the holder rather than forgery; Cerberus, by contrast, requires at least two nodes to approve a revocation~\cite{tariq2023}.

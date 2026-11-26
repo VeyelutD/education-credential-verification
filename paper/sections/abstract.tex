@@ -1,12 +1,5 @@
-% Write LAST (course guide: evaluation -> method -> related work -> introduction -> abstract).
-% About 200 words: problem, gap, what you built, how you measured, 3 headline results, main limitation.
 \begin{abstract}
-\todo{Write last. Suggested structure: (1) blockchain proves \emph{who} registered a credential, not that the
-registrant was honest; (2) the gap; (3) the shared-registry prototype with four interchangeable approval
-policies; (4) exhaustive coalition analysis, receipt-based gas measurement and Monte Carlo availability
-simulation; (5) headline numbers: role constraints cut capable 4-person coalitions from \CoalCkFour{} to
-\CoalDkFour{} at +\GasRoleOverheadPct{} gas, without raising the minimum coalition size, at an availability cost
-under role outages (\OutageFiveD{} vs.\ \OutageFiveC{} completion); (6) the governor-trust limitation.}
+A blockchain can show which account registered an academic credential and that the record has not changed since. It cannot show that the account holder was honest. We study issuance as an authorization problem inside one university and ask how role-constrained approval compares with single-issuer, unanimous and role-agnostic threshold approval in insider resistance, gas consumption and availability. We implement a Solidity registry that stores salted commitments and delegates only the issuance decision to an interchangeable policy contract, so that credential format, storage and lifecycle are identical across policies. For a synthetic university with two registrars, three deans and two examination officers we enumerate every insider coalition and check each outcome against the contracts, measure gas from transaction receipts, and simulate approval delay and absence. At a common 4-of-7 threshold, requiring every role leaves the minimum coalition size at four but reduces the capable four-person coalitions from \CoalCkFour{} to \CoalDkFour{}, for \GasRoleOverheadPct{} more gas per issuance. The price is availability: two absent employees can block issuance instead of four, and under a 5\% whole-role outage simulated completion falls from \OutageFiveC{} to \OutageFiveD{}. Larger staffings remove most of the loss from individual absence but not the loss from whole-role outages. The benefit of roles depends on how people collude: under independent compromise with probability 0.1 the role requirement lowers the probability that a compromised set can issue by \CorRedZero{}, and by \CorRedHalf{} when the correlation within offices is 0.5. No policy is best on all measures. We relate the results to diploma verification in Kazakhstan and state what the design cannot prevent, above all a compromised governor and falsified source records.
 \end{abstract}
 
 \begin{IEEEkeywords}

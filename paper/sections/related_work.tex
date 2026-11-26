@@ -1,30 +1,43 @@
 \section{Background and Related Work}\label{sec:related}
-% Course rule: write this section yourselves. Organise by THEME and take a position; do not write one
-% paragraph per paper. Cite only papers you have opened; take BibTeX from DBLP or the publisher.
 
-\subsection{Blockchain academic credential systems}
-\note{Themes, not lists. Which systems use a single issuing account? Which use permissioned networks or node
-consensus? What do they assume about the honesty of the issuing employee? Candidates from your reading list:
-EduCTX, CredenceLedger, Leka \& Selimi, DIAR (Rustemi et al.), Educert-chain (Rani et al.),
-Cardenas-Quispe \& Pacheco, the IEEE Access systematic review, Al Hemairy et al.
-Kazakhstan: Shakan et al., Ussatova et al., Begimbayeva et al.}
+\subsection{Issuance controlled by one institutional authority}
+Many credential systems treat the institution as a single actor. In the University of Zurich prototype, the issuing function checks that the caller is the contract owner~\cite{gresch2019}. A recent TRON system restricts issuance to authorized addresses~\cite{andrade2025}. In the system proposed for Kazakhstani universities by Razaque et al., the university is the authorized address that may add records~\cite{razaque2025}. Two related Kazakhstani prototypes protect registration with contract role checks: one for transcripts~\cite{ussatova2026a} and one for transcripts and diplomas, in which functions are open to an issuer or administrator role~\cite{ussatova2026b}. EduCTX uses 2-of-2 multisignature addresses, but these prevent students from transferring tokens they have gained~\cite{turkanovic2018}; they do not divide issuance among employees. These systems share the assumption that control of the institutional key implies institutional intent. A dishonest employee with access to that key satisfies the contract.
 
-\subsection{Multi-party issuance in prior credential work}
-\note{The closest baselines. Verify the \emph{exact} mechanism before describing it.
-Lone \& Naaz (2020): is it really N-of-N multisignature?
-Sarwar et al.\ (2026): node-level majority consensus in MultiChain, which differs from employee-level approval.
-Tariq et al.\ (Cerberus): check its governance and issuance controls.
-Nousias et al.\ (2022): issuance as an institutional workflow.
-State plainly what these share and what none of them measures. That is your gap.}
+A separate problem is issuer authentication: whether the signing key belongs to the named institution. Baldi et al.\ show that the Blockcerts validation procedure they analyzed accepted a fabricated issuer profile, because the profile was retrieved without authentication~\cite{baldi2019}, and Zonneveld et al.\ report a forgery attack on Block.co that exploits the link between real and digital issuer identity~\cite{zonneveld2026}. Frutuoso et al.\ address this link with an on-chain registry of accredited issuers, and state that compromise of the registry owner's key defeats accreditation~\cite{frutuoso2026}. Our governor has the same weakness. Issuer authentication and internal authorization are complementary: the first establishes which university acted, and the second who inside it agreed.
 
-\subsection{Role-based access control and separation of duty}
-\note{RBAC foundations (Ferraiolo \& Kuhn 1992; Sandhu et al.\ 1996; the NIST model, 2000) and separation of
-duty (Kuhn 1997). Our design uses static separation of duty (one address, one role) plus an approval-time
-role-diversity constraint. Hyperledger Fabric endorsement policies already express role-aware AND/OR/threshold
-rules. Acknowledge this and position the contribution as \emph{measurement} in the credential setting, not as
-a new mechanism.}
+\subsection{Issuance shared among several parties}
+Six systems are closest to ours. Lone and Naaz register designated signers for each institution. Their published contract counts the signatures and lets \texttt{addCert()} run only if the count equals the number of designated signers~\cite{lone2020}. This is unanimous approval, without job roles, and it is the model for our Policy B. They report gas for each function but compare no alternative rule.
 
-\subsection{Credential standards}
-\note{W3C Verifiable Credentials Data Model 2.0, Data Integrity 1.0 and Bitstring Status List: issuer, holder and
-verifier roles, and revocation. Our commitment-plus-status design is a minimal on-chain analogue. Say what it
-does not cover (selective disclosure, holder binding, DIDs).}
+Sarwar et al.\ require at least 51\% of a university's authorized nodes to accept a certificate before it is written to a MultiChain ledger, and they justify the threshold by both resistance to one malicious node and tolerance of unavailable reviewers~\cite{sarwar2026}. The voters are nodes in a university group rather than employees with distinct duties. We borrow the numerical idea for Policy C, not the mechanism.
+
+Cardenas-Quispe and Pacheco assign registering and signing roles to between one and five nodes and generate a degree when the necessary authorities have signed~\cite{cardenas2025}. Their 67\% rule is a node-level approval of each signature. They measure latency and do not compare signing rules or the effect of absent signers.
+
+Cerberus is the nearest source of our central idea. It describes corrupt officials who insert an illegitimate record. Its base protocol has the registrar sign, and it proposes that a university may additionally require multisignature by the registrar and staff of the relevant department, so that a student would have to bribe several unrelated parties~\cite{tariq2023}. Policy D implements a rule of this type. Cerberus presents it as an option, without fixing a threshold for issuance or measuring the protection, cost or delay it would bring. We therefore claim the measurement and not the idea.
+
+Saramago et al.\ offer the most developed security argument. They name bribed registrars and stolen registrar keys as sources of certification fraud, require quorum signatures for critical operations, and spread sub-credentials over many registrars in a tree of notary contracts~\cite{saramago2021}. They observe that a corrupt registrar may still create a fraudulent leaf credential, while building a whole tree needs several notaries and matching keys. Protection thus comes from stages of a degree as well as from quorums. We fix a single stage so that the effect of the authorization rule can be isolated, and give up the protection that a multi-stage history provides. Their cost table compares deployment variants with Blockcerts rather than alternative authorization rules.
+
+DAVE-CC shares authority across institutions. An issuer obtains a threshold signature on a credential from independent regulatory authorities, and the system is said to remain operational while up to $n-t$ of them are unavailable~\cite{tran2025}. That is the trade-off between threshold and absence that we find for role-agnostic policies inside one university. In DAVE-CC, roles such as dean appear in policies for decrypting credentials and not in the rule for signing them. Its authors leave the governance of the authorities outside their scope.
+
+These works establish that multi-party issuance is feasible. They leave open how much protection comes from the number of approvers and how much from who they are.
+
+\subsection{Separation of duty and its availability cost}
+Role-based access control assigns permissions to organizational roles~\cite{ferraiolo1992,sandhu2000}. Ferraiolo and Kuhn define separation of duty as requiring that no single individual can execute all transactions in a set, and distinguish static rules, checked from role assignments, from dynamic rules, checked during operation~\cite{ferraiolo1992}. Kuhn studies mutual exclusion of roles as one way to obtain it, and distinguishes authorization-time exclusion, where a user may not be authorized for two exclusive roles, from run-time exclusion, where both may be held but not used in one session~\cite{kuhn1997}. Our registry applies the first kind: an address holds one approver role and cannot be governor. In Kuhn's terms the approver roles still share privileges, since each may propose and approve, so exclusion alone would not separate the duty. The separation comes from Policy D, which adds a requirement on the set of approvers for each credential. Kuhn also shows that exclusion rules rule out a role that contains all others. Our governor holds no approver role, but it decides who does, which exclusion cannot prevent.
+
+Two results from this literature bound our novelty claim. The first concerns the rule itself. Li and Wang observe that classical separation-of-duty policies state only how many users are needed, and introduce an algebra that combines this quantity with qualifications of the users~\cite{li2008}. A term describes sets of users; for example, $\mathit{All}\otimes\mathit{All}\otimes\mathit{All}$ requires three different users. Our thresholds can be read in this notation. Policy C corresponds to
+\begin{equation}
+\mathit{All}\otimes\mathit{All}\otimes\mathit{All}\otimes\mathit{All},
+\end{equation}
+and Policy D to
+\begin{equation}
+\mathit{Reg}\otimes\mathit{Dean}\otimes\mathit{Exam}\otimes\mathit{All},
+\end{equation}
+where a coalition is capable if it contains a subset that satisfies the term. D is thus a known kind of policy, and what we add is its effect in a concrete credential system.
+
+The second concerns availability. Li et al.\ define a resiliency policy $rp\langle P,s,d,t\rangle$: after removal of any $s$ users there must remain $d$ disjoint sets of at most $t$ users, each holding all permissions in $P$. They combine it with separation of duty in the policy $resod\langle P,k,s\rangle$, under which fewer than $k$ users cannot complete the task and any $s$ users may be absent, and note that increasing resiliency may come at a cost of decreasing separation of duty~\cite{li2009}. Their definitions refer to static permission assignments. We apply the same pair $(k,s)$ to the approval rules and extend it with the composition of capable coalitions and with simulated delay.
+
+Role and threshold rules also exist in blockchain platforms. Hyperledger Fabric endorsement policies name principals by organization and role and combine them with \texttt{AND}, \texttt{OR} and \texttt{OutOf}~\cite{fabricdocs}. Ri et al.\ implement role-based access control with separation-of-duty constraints on Fabric~\cite{ri2022}. An endorsement policy decides which peers must endorse a transaction, which is not by itself the question of which employees agreed to issue a diploma. Piao et al.\ compare endorsement policies on Fabric and report that latency grows with $k$ in $k$-\texttt{OutOf} policies, that \texttt{AND} reached nearly five times the latency of \texttt{OR} at 220 transactions per second, and that equivalent expressions can differ in latency~\cite{piao2023}. Like us they vary the policy and hold the platform fixed. They measure machine latency under load, whereas our delays come from people and our cost measure is gas, so the numbers are not comparable.
+
+\subsection{Credential standards and Kazakhstan}
+The W3C data model defines issuers, holders and verifiers, and notes that verifiers trust certain issuers for certain claims~\cite{w3cvcdm}. Bitstring Status List specifies how revocation or suspension status can be published~\cite{w3cbitstring}. Our registry offers a small on-chain analogue of issuance and status. It does not implement these standards, selective disclosure or holder binding.
+
+Kazakhstan has its own research line. UniverCert is a prototype of a consortium Ethereum network, to which universities enter student data and in which access is adjusted by role; its authors estimate about 500,000 requests for diploma authentication a year in the country~\cite{shakan2021}. They argue that blockchain certificates cannot be forged because they indicate the issuing party. That argument covers outsiders, and our experiments start where it ends, with a misbehaving member of the issuing party. Razaque et al.\ combine an Ethereum registry with machine-learning anomaly detection~\cite{razaque2025}. Their evaluation and ours both use synthetic data, but the threat models differ: they try to detect suspicious records, whereas we restrict which groups of people can create them. The two could be combined.

@@ -258,20 +258,15 @@ contract IssuanceTest is CredentialFixture {
         registry.cancelProposal(c);
     }
 
-    /// @dev Cancelled commitments are burned, so stale approvals can never
-    ///      be revived by re-proposing the same commitment.
-    function test_CancelledCommitmentCannotBeReproposed() public {
-        vm.prank(r1);
+    /// @dev See ProposalSquatting.t.sol for why cancelling does not burn the commitment.
+    function test_CancelledCommitmentCanBeReproposed() public {
+        vm.startPrank(r1);
         registry.propose(c);
-        vm.prank(r1);
         registry.cancelProposal(c);
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                CredentialRegistry.CommitmentAlreadyUsed.selector, c, CredentialRegistry.RecordStatus.Cancelled
-            )
-        );
-        vm.prank(r1);
         registry.propose(c);
+        vm.stopPrank();
+        assertEq(uint8(_status(c)), uint8(CredentialRegistry.VerificationStatus.Pending));
+        assertEq(registry.getRecord(c).round, 1);
     }
 
     function test_CannotApproveCancelledProposal() public {

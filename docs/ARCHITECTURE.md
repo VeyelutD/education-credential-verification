@@ -86,7 +86,7 @@ returns `NotFound`.
                            │
                            │ cancelProposal (proposer or governor)
                            ▼
-                       Cancelled   (commitment burned; cannot be re-proposed)
+                       Cancelled   (may be re-proposed in a new round, with no approvals)
 ```
 
 `verify` maps the internal state to what the verifier sees:
@@ -97,8 +97,12 @@ returns `NotFound`.
 - `finalize` can be called by any eligible, active approver of the issuing
   university. It is a separate transaction so that gas can be measured per
   step.
-- Every commitment is single-use. A revoked or cancelled credential is
-  re-issued under a new salt, so it gets a new commitment.
+- A commitment can be issued at most once. A revoked credential is re-issued
+  under a new salt, so it gets a new commitment.
+- Cancelling starts a new round: approvals are keyed by (commitment, round), so
+  none carry over. A proposer can cancel only while nobody else has approved;
+  the governor can cancel at any time. An earlier version burned cancelled
+  commitments, which let one insider block a credential permanently.
 
 ## 5. Pending proposals when approvers change
 

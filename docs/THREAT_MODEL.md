@@ -48,7 +48,8 @@ every policy must also meet.
 | Unauthorized issuance (T3) | Only active, eligible approvers can propose, approve or finalize | `Issuance.t.sol::test_OutsiderCannotProposeApproveOrFinalize` |
 | Governor bypass (admin path) | Governor has no issuance function, and governor ≠ approver in both directions | `test_GovernorCannotIssue`, `Registry.t.sol::test_ApproverCannotBeGranted*` |
 | Policy downgrade | Policy is `immutable` | by construction |
-| Duplicate issuance | Single-use commitments (Pending/Issued/Revoked/Cancelled all block re-proposal) | `test_DuplicateProposalReverts`, `test_CannotReproposeIssuedCredential`, `test_CancelledCommitmentCannotBeReproposed` |
+| Duplicate issuance | Pending, issued and revoked commitments cannot be proposed again | `test_DuplicateProposalReverts`, `test_CannotReproposeIssuedCredential`, `test_RevokedCommitmentCannotBeReissued` |
+| Squatting: one insider proposes first, then cancels | Cancelling does not burn the commitment; no cancel after another approval; approvals are per round | `ProposalSquatting.t.sol` |
 | Duplicate approval (vote inflation) | One counted approval per (commitment, approver, nonce) | `test_DuplicateApprovalReverts`, `test_ProposerCannotApproveAgain` |
 | Approval reuse across credentials | Approvals are keyed by commitment | `test_ApprovalsAreNotReusableAcrossCredentials` |
 | Deactivated / reassigned insider | Nonce invalidation, rechecked at finalize | `PolicySecurity.t.sol::test_RoleChangeInvalidatesPendingApproval`, `test_DeactivatedApprover...`, `test_ReactivationDoesNotReviveOldApproval` |
@@ -67,6 +68,9 @@ every policy must also meet.
   first to block it. The verifier's issuer cross-check (ARCHITECTURE §3)
   stops this from producing a false `Valid` for the wrong issuer, but it
   still denies service.
+- **R3b Repeated front-running.** An insider can keep proposing and cancelling
+  before an honest employee approves. Each attempt costs the insider gas and is
+  logged under their address, and one honest approval ends it.
 - **R4 Stale pending proposals.** There is no expiry. A pending proposal
   stays until it is finalized or cancelled. Adding an expiry is possible
   future work, with its own trade-offs.

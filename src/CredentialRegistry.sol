@@ -38,8 +38,10 @@ contract CredentialRegistry is AccessControl {
     // Types
     // ---------------------------------------------------------------------
 
-    /// @dev Internal lifecycle state of a commitment. `Cancelled` commitments
-    ///      are burned: they can never be proposed again.
+    /// @dev Internal lifecycle state of a commitment. A `Cancelled` commitment
+    ///      may be proposed again, in a new round with no approvals. Burning it
+    ///      instead would let one insider block a credential for good by
+    ///      proposing it first and cancelling.
     enum RecordStatus {
         None,
         Pending,
@@ -77,6 +79,7 @@ contract CredentialRegistry is AccessControl {
         uint64 proposedAt;
         uint64 issuedAt;
         uint64 revokedAt;
+        uint24 round; // number of cancelled proposals so far
         address proposer;
         bytes32 revocationReason;
     }
@@ -104,10 +107,11 @@ contract CredentialRegistry is AccessControl {
     mapping(address account => Approver) private _approvers;
 
     mapping(bytes32 commitment => Record) private _records;
-    /// @dev Distinct addresses that have ever approved this commitment.
-    mapping(bytes32 commitment => address[]) private _approvalList;
+    /// @dev Distinct addresses that approved in one round. The key is
+    ///      keccak256(commitment, round), so a new round starts empty.
+    mapping(bytes32 roundKey => address[]) private _approvalList;
     /// @dev Approver nonce at the time of approval (0 = never approved).
-    mapping(bytes32 commitment => mapping(address approver => uint64 nonce)) private _approvalNonce;
+    mapping(bytes32 roundKey => mapping(address approver => uint64 nonce)) private _approvalNonce;
 
     // ---------------------------------------------------------------------
     // Events (audit trail)
@@ -255,7 +259,8 @@ contract CredentialRegistry is AccessControl {
     function propose(bytes32 commitment) external {
         if (commitment == bytes32(0)) revert InvalidCommitment();
         Record storage rec = _records[commitment];
-        if (rec.status != RecordStatus.None) revert CommitmentAlreadyUsed(commitment, rec.status);
+        if (rec.status == RecordStatus.Cancelled) rec.round += 1;
+        else if (rec.status != RecordStatus.None) revert CommitmentAlreadyUsed(commitment, rec.status);
 
         Approver memory ap = _requireEligible(msg.sender);
 
@@ -265,7 +270,7 @@ contract CredentialRegistry is AccessControl {
         rec.proposer = msg.sender;
         emit CredentialProposed(commitment, ap.universityId, msg.sender);
 
-        _recordApproval(commitment, msg.sender, ap);
+        _recordApproval(commitment, _roundKey(commitment, rec.round), msg.sender, ap);
     }
 
     /// @notice Approve a pending proposal of your own university.
@@ -274,10 +279,10 @@ contract CredentialRegistry is AccessControl {
         Approver memory ap = _requireEligible(msg.sender);
         if (ap.universityId != rec.universityId) revert WrongUniversity(msg.sender, rec.universityId);
 
-        uint64 given = _approvalNonce[commitment][msg.sender];
+        uint64 given = _approvalNonce[_roundKey(commitment, rec.round)][msg.sender];
         if (given != 0 && given == ap.nonce) revert AlreadyApproved(commitment, msg.sender);
 
-        _recordApproval(commitment, msg.sender, ap);
+        _recordApproval(commitment, _roundKey(commitment, rec.round), msg.sender, ap);
     }
 
     /// @notice Issue the credential if the policy is satisfied by the
@@ -295,12 +300,14 @@ contract CredentialRegistry is AccessControl {
         emit CredentialIssued(commitment, rec.universityId, msg.sender, total);
     }
 
-    /// @notice Withdraw a pending proposal. Allowed for the (still active)
-    ///         proposer or the governor. The commitment is burned.
+    /// @notice Withdraw a pending proposal. Allowed for the governor, or for
+    ///         the (still active) proposer while nobody else has approved, so
+    ///         a proposer cannot discard other people's approvals.
     function cancelProposal(bytes32 commitment) external {
         Record storage rec = _requirePending(commitment);
-        bool isProposer = msg.sender == rec.proposer && _approvers[msg.sender].active;
-        if (!isProposer && !hasRole(GOVERNOR_ROLE, msg.sender)) revert NotAuthorizedToCancel(msg.sender);
+        bool mayWithdraw = msg.sender == rec.proposer && _approvers[msg.sender].active
+            && _approvalList[_roundKey(commitment, rec.round)].length == 1;
+        if (!mayWithdraw && !hasRole(GOVERNOR_ROLE, msg.sender)) revert NotAuthorizedToCancel(msg.sender);
 
         rec.status = RecordStatus.Cancelled;
         emit ProposalCancelled(commitment, msg.sender);
@@ -375,13 +382,13 @@ contract CredentialRegistry is AccessControl {
     }
 
     function getApprovers(bytes32 commitment) external view returns (address[] memory) {
-        return _approvalList[commitment];
+        return _approvalList[_roundKey(commitment, _records[commitment].round)];
     }
 
     /// @notice Whether `account`'s approval of `commitment` currently counts.
     function isApprovalValid(bytes32 commitment, address account) public view returns (bool) {
         Approver storage ap = _approvers[account];
-        uint64 given = _approvalNonce[commitment][account];
+        uint64 given = _approvalNonce[_roundKey(commitment, _records[commitment].round)][account];
         return given != 0 && ap.active && given == ap.nonce && policy.isEligible(ap.role);
     }
 
@@ -401,9 +408,13 @@ contract CredentialRegistry is AccessControl {
     // Internal
     // ---------------------------------------------------------------------
 
-    function _recordApproval(bytes32 commitment, address account, Approver memory ap) private {
-        if (_approvalNonce[commitment][account] == 0) _approvalList[commitment].push(account);
-        _approvalNonce[commitment][account] = ap.nonce;
+    function _roundKey(bytes32 commitment, uint24 round) private pure returns (bytes32) {
+        return keccak256(abi.encode(commitment, round));
+    }
+
+    function _recordApproval(bytes32 commitment, bytes32 key, address account, Approver memory ap) private {
+        if (_approvalNonce[key][account] == 0) _approvalList[key].push(account);
+        _approvalNonce[key][account] = ap.nonce;
         emit CredentialApproved(commitment, account, ap.role);
     }
 
@@ -420,12 +431,13 @@ contract CredentialRegistry is AccessControl {
             if (eligible[r]) eligibleActive += _activeRoleCount[universityId][r];
         }
 
-        address[] storage list = _approvalList[commitment];
+        bytes32 key = _roundKey(commitment, _records[commitment].round);
+        address[] storage list = _approvalList[key];
         uint256 n = list.length;
         for (uint256 i; i < n; ++i) {
             address a = list[i];
             Approver storage ap = _approvers[a];
-            if (ap.active && ap.universityId == universityId && _approvalNonce[commitment][a] == ap.nonce) {
+            if (ap.active && ap.universityId == universityId && _approvalNonce[key][a] == ap.nonce) {
                 uint256 r = uint8(ap.role);
                 if (eligible[r]) {
                     counts[r] += 1;

@@ -10,6 +10,7 @@ Steps:
   3. Experiment A: coalition analysis          -> data/coalition_*.csv
   4. Experiment B: gas benchmark on Anvil      -> data/gas_*.csv
   5. Experiment C: availability simulation     -> data/availability_results.csv
+  5b. Experiments D and E (exact)             -> data/configuration_*.csv, correlation_results.csv
   6. python tests (pytest)
   7. figures + LaTeX tables                    -> figures/, paper/tables/
 """
@@ -43,6 +44,7 @@ def main() -> None:
     if not args.no_gas:
         step("4. Experiment B: gas", [PY, "experiments/gas_benchmark.py"])
     step("5. Experiment C: availability", [PY, "experiments/availability_simulation.py"])
+    step("5b. Experiments D and E: configurations, correlation", [PY, "experiments/configuration_study.py"])
     step("6. pytest", [PY, "-m", "pytest", "experiments/tests", "-q"])
     step("7. figures and tables", [PY, "experiments/generate_figures.py"])
     print("\nDone. Outputs: data/, figures/, paper/tables/")

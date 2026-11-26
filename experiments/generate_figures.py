@@ -14,7 +14,9 @@ import matplotlib.pyplot as plt
 from matplotlib.ticker import FuncFormatter
 import pandas as pd
 
-from common import DATA, FIGURES, TABLES
+from itertools import combinations
+
+from common import DATA, FIGURES, N_STAFF, STAFF, TABLES, can_issue, primary_policies, sensitivity_policies
 
 # Categorical palette (validated: CVD + normal-vision separation pass on a light
 # surface). Two slots are below 3:1 contrast, so every series is also identified
@@ -72,28 +74,21 @@ def line(ax, x, y, key, **kw):
 # ---------------------------------------------------------------------------
 def fig_coalition() -> None:
     df = pd.read_csv(DATA / "coalition_results.csv")
-    fig, ax = plt.subplots(figsize=(5.2, 3.2))
-    offsets = {"A_single": 0.0, "B_unanimous": 0.0, "C_majority_4of7": 0.012, "D_role_4of7": -0.012}
-    for key in PRIMARY:
+    fig, ax = plt.subplots(figsize=(5.2, 3.4))
+    # True values, no offsets. Where lines coincide, larger hollow-edged markers
+    # drawn first stay visible around the smaller ones.
+    sizes = {"A_single": 6, "B_unanimous": 11, "C_majority_4of7": 8.5, "D_role_4of7": 5}
+    for key in ("B_unanimous", "C_majority_4of7", "A_single", "D_role_4of7"):
         d = df[df.policy == key]
-        line(ax, d.k, d.success_fraction + offsets[key], key)
+        line(ax, d.k, d.success_fraction, key, ms=sizes[key])
     ax.set_xlabel("Coalition size k (compromised employees)")
     ax.set_ylabel("Coalition success fraction")
     ax.set_xticks(range(1, 8))
-    ax.set_ylim(-0.04, 1.06)
-    ax.set_title("Share of k-employee coalitions able to issue without honest approval", fontsize=9, loc="left")
-    d4 = df[(df.policy == "D_role_4of7") & (df.k == 4)].iloc[0]
-    ax.annotate(
-        f"D at k=4: {d4.capable}/{d4.total} = {d4.success_fraction:.3f}\nC at k=4: 35/35 = 1.000",
-        xy=(4, d4.success_fraction - 0.012),
-        xytext=(4.6, 0.38),
-        fontsize=8,
-        color=INK_2,
-        arrowprops={"arrowstyle": "-", "color": INK_2, "lw": 0.8},
-    )
-    ax.legend(loc="upper left", fontsize=8)
-    ax.text(1, -0.24, "Lines for C and D are offset by ±0.012 where they coincide (k ≤ 3 and k ≥ 6).",
-            transform=ax.transAxes, ha="right", fontsize=7, color=INK_2)
+    ax.set_ylim(-0.06, 1.08)
+    handles, labels = ax.get_legend_handles_labels()
+    order = sorted(range(len(labels)), key=lambda i: labels[i])
+    fig.legend([handles[i] for i in order], [labels[i] for i in order],
+               loc="upper center", bbox_to_anchor=(0.5, 0.0), ncol=2, fontsize=8)
     save(fig, "fig_coalition")
 
 
@@ -190,29 +185,74 @@ def fig_availability() -> None:
 
 
 # ---------------------------------------------------------------------------
-# Trade-off
+# Configurations and correlation (experiments D and E)
 # ---------------------------------------------------------------------------
-def fig_tradeoff() -> None:
-    coal = pd.read_csv(DATA / "coalition_results.csv")
-    gas = pd.read_csv(DATA / "gas_per_issuance.csv").groupby("policy").total.median()
-    av = _sweep()
-    av = av[av.absence_prob == 0.10].set_index("policy")
+def fig_ks() -> None:
+    """k (insiders needed) against s (absences tolerated), primary university."""
+    d = _ks_rows()
+    fig, ax = plt.subplots(figsize=(5.2, 3.3))
+    ax.plot([0, 7], [7, 0], color=GRID, linewidth=1.5, zorder=1)
+    ax.text(6.25, 0.95, "k + s = 7", color=INK_2, fontsize=8)
+    for label, k, sv, frac in d:
+        letter = label[0]
+        key = {"A": "A_single", "B": "B_unanimous", "C": "C_majority_4of7", "D": "D_role_4of7"}[letter]
+        _, color, marker = POLICY_STYLE[key]
+        ax.scatter(k, sv, s=75, color=color, marker=marker, edgecolors="white", linewidths=1.2, zorder=3)
+        text = label.split(":")[0]
+        if letter in "CD":
+            text += f" {label.split()[-1]}\n{frac:.0%}" + (" capable" if letter == "C" else "")
+        if letter == "D":  # centred below, clear of the neighbouring markers
+            ax.annotate(text, (k, sv), xytext=(0, -9), textcoords="offset points", fontsize=7.5,
+                        ha="center", va="top")
+        else:
+            ax.annotate(text, (k, sv), xytext=(8, 4), textcoords="offset points", fontsize=7.5)
+    ax.set_xlabel("k: smallest coalition able to issue")
+    ax.set_ylabel("s: absences always tolerated")
+    ax.set_xlim(0.5, 8.2)
+    ax.set_ylim(-0.4, 4.9)
+    ax.set_xticks(range(1, 8))
+    ax.grid(axis="x", visible=True)
+    save(fig, "fig_ks")
 
-    fig, ax = plt.subplots(figsize=(5.2, 3.2))
-    for key in PRIMARY:
-        label, color, marker = POLICY_STYLE[key]
-        sec = coal[(coal.policy == key) & (coal.k == 4)].success_fraction.iloc[0]
-        ax.scatter(gas[key], sec, s=70, color=color, marker=marker, edgecolors="white", linewidths=1.5, zorder=3)
-        dy = {"C_majority_4of7": 0.06, "D_role_4of7": -0.10}.get(key, 0.06)
-        ax.annotate(f"{label}\non time: {av.loc[key, 'within_deadline_rate']:.1%}",
-                    (gas[key], sec), xytext=(8, dy * 100), textcoords="offset points", fontsize=7.5)
-    ax.set_xlabel("Gas per completed issuance (median)")
-    ax.set_ylabel("Success fraction of 4-employee coalitions\n(lower = more insider-resistant)")
-    ax.set_ylim(-0.08, 1.15)
-    ax.set_xlim(gas.min() * 0.7, gas.max() * 1.35)
-    ax.xaxis.set_major_formatter(KGAS)
-    ax.set_title("Security vs. cost; label shows on-time issuance at 10% absence", fontsize=9, loc="left")
-    save(fig, "fig_tradeoff")
+
+def fig_correlation() -> None:
+    df = pd.read_csv(DATA / "correlation_results.csv")
+    df = df[(df.staffing == "2-3-2") & (df.gamma == 0.0)]
+    fig, axes = plt.subplots(1, 2, figsize=(7.0, 2.7))
+    d = df[df.p == 0.10]
+    axes[0].plot(d.rho, d.fraud_C, color="#1baf7a", marker="^", label="C: 4-of-7, any roles")
+    axes[0].plot(d.rho, d.fraud_D, color="#eda100", marker="D", label="D: 4-of-7, one per role")
+    axes[0].set_yscale("log")
+    axes[0].set_title("P(compromised set can issue), p = 0.1", fontsize=9, loc="left")
+    axes[0].set_ylabel("Probability (log scale)")
+    axes[0].legend(fontsize=7, loc="center right", bbox_to_anchor=(1.0, 0.6))
+    for pv, color, marker in ((0.05, STEPS_BLUE[0], "o"), (0.10, STEPS_BLUE[1], "s"), (0.20, STEPS_BLUE[2], "^")):
+        d = df[df.p == pv]
+        axes[1].plot(d.rho, d.break_even, color=color, marker=marker, label=f"p = {pv:.2f}")
+    axes[1].set_yscale("log")
+    axes[1].set_title("Break-even weight of a capable set", fontsize=9, loc="left")
+    axes[1].legend(fontsize=7, loc="upper right")
+    for ax in axes:
+        ax.set_xlabel("Within-office correlation \u03c1")
+    fig.tight_layout()
+    save(fig, "fig_correlation")
+
+
+def _ks_rows() -> list[tuple[str, int, int, float]]:
+    summ = pd.read_csv(DATA / "coalition_summary.csv").set_index("policy")
+    pols = {q.key: q for q in primary_policies() + sensitivity_policies()}
+    rows = []
+    for key, pol in pols.items():
+        sv = -1
+        for size in range(N_STAFF + 1):
+            if all(can_issue(pol, [STAFF[i] for i in range(N_STAFF) if i not in a])
+                   for a in combinations(range(N_STAFF), size)):
+                sv = size
+            else:
+                break
+        r = summ.loc[key]
+        rows.append((pol.label, int(r.min_coalition_size), sv, float(r.success_fraction_at_min_size)))
+    return rows
 
 
 # ---------------------------------------------------------------------------
@@ -279,6 +319,30 @@ def tables() -> None:
          rows, "l" + "r" * 6)
 
 
+def table_ks() -> None:
+    """(k, s) per policy: k = smallest capable coalition, s = absences always tolerated."""
+    summ = pd.read_csv(DATA / "coalition_summary.csv").set_index("label").smallest_capable_coalitions
+    rows = [[lab, str(k), str(sv), f"{summ[lab] if not hasattr(summ[lab], 'iloc') else summ[lab].iloc[0]} ({fr:.3f})"]
+            for lab, k, sv, fr in _ks_rows()]
+    _tex("table_ks", "Smallest capable coalition $k$, absences always tolerated $s$, and number (fraction) of "
+         "capable coalitions of size $k$.", "tab:ks", ["Policy", "$k$", "$s$", "Capable at $k$"], rows, "lccr")
+    f = TABLES / "table_ks.tex"
+    f.write_text(f.read_text(encoding="utf-8").replace("table*", "table"), encoding="utf-8", newline="\n")
+
+
+def table_config() -> None:
+    df = pd.read_csv(DATA / "configuration_results.csv")
+    rows = []
+    for r in df.itertuples():
+        rows.append([f"{r.staffing}", str(r.threshold), r.policy, str(r.k), str(r.s),
+                     f"{r.capable_at_k:,}/{r.total_at_k:,} ({r.fraction_at_k:.3f})".replace(",", "{,}"),
+                     f"{r.complete_absence10 * 100:.2f}\\%", f"{r.complete_absence10_outage5 * 100:.2f}\\%"])
+    _tex("table_config", "University configurations (registrars-deans-examination officers). Completion is exact, at "
+         "10\\% individual absence, without and with a 5\\% whole-role outage.", "tab:config",
+         ["Staffing", "Threshold", "Policy", "$k$", "$s$", "Capable at $k$", "Completes", "with outage"],
+         rows, "lcccc" + "rrr")
+
+
 def macros() -> None:
     """Write paper/tables/results_macros.tex: every result quoted in the paper text
     as a LaTeX macro, so no number is ever typed by hand."""
@@ -332,6 +396,72 @@ def macros() -> None:
         m[f"OutageFive{L}"] = pct(out5.loc[key, "completion_rate"])
         m[f"OutageTen{L}"] = pct(out10.loc[key, "completion_rate"])
 
+    # Smallest set of absent employees that makes issuance impossible (dual of the
+    # minimum coalition). Approvers stay registered, so Unanimous still needs all 7.
+    for pol in primary_policies():
+        for size in range(1, N_STAFF + 1):
+            blocking = sum(
+                not can_issue(pol, [STAFF[i] for i in range(N_STAFF) if i not in absent])
+                for absent in combinations(range(N_STAFF), size)
+            )
+            if blocking:
+                m[f"Block{letters[pol.key]}"] = str(size)
+                m[f"BlockSets{letters[pol.key]}"] = str(blocking)
+                break
+
+    # P(issue) under the i.i.d. compromise ASSUMPTION.
+    prob = pd.read_csv(DATA / "coalition_probability.csv").set_index(["policy", "p_compromise"]).p_issue
+    for key, L in letters.items():
+        m[f"ProbTen{L}"] = f"{prob.loc[(key, 0.1)]:.4f}"
+        m[f"ProbThirty{L}"] = f"{prob.loc[(key, 0.3)]:.4f}"
+
+    # Published numbers: Lone & Naaz (2020), Table 4.1 (sign, addCert).
+    sign, add = 87_708, 182_043
+    m["LoneSign"], m["LoneAdd"] = gas(sign), gas(add)
+    m["LoneSeven"] = gas(7 * sign + add)
+    m["RatioBA"] = f"{per.loc['B_unanimous', 'total'] / per.loc['A_single', 'total']:.1f}"
+    for L, key in (("C", "C_majority_4of7"), ("D", "D_role_4of7")):
+        m[f"DeployPolicy{L}"] = gas(summ.loc[(key, "deploy_policy")])
+    for name, gwei in (("EthLowD", 0.5), ("EthHighD", 30)):  # ASSUMED gas prices
+        m[name] = f"{per.loc['D_role_4of7', 'total'] * gwei * 1e-9:.5f}"
+    m["GasRevoke"] = gas(summ.loc[("D_role_4of7", "revoke")])
+    m["GasPropose"] = gas(summ.loc[("D_role_4of7", "propose")])
+    m["GasAddApprover"] = gas(summ.loc[("D_role_4of7", "add_approver")])
+
+    cor = pd.read_csv(DATA / "correlation_results.csv")
+    cor = cor[(cor.staffing == "2-3-2") & (cor.gamma == 0.0) & (cor.p == 0.10)].set_index("rho")
+    for name, rho in (("Zero", 0.0), ("Half", 0.5), ("One", 1.0)):
+        r = cor.loc[rho]
+        m[f"CorC{name}"], m[f"CorD{name}"] = f"{r.fraud_C:.4f}", f"{r.fraud_D:.4f}"
+        m[f"CorRed{name}"] = f"{r.relative_reduction * 100:.0f}\\%"
+        m[f"CorBreak{name}"] = f"{r.break_even:.1f}"
+    cor = pd.read_csv(DATA / "correlation_results.csv")
+    cor = cor[(cor.staffing == "2-3-2") & (cor.gamma == 0.02) & (cor.p == 0.10)].set_index("rho")
+    m["CorRedOneGamma"] = f"{cor.loc[1.0].relative_reduction * 100:.0f}\\%"
+
+    cor = pd.read_csv(DATA / "correlation_results.csv")
+    cor = cor[(cor.staffing == "2-3-2") & (cor.gamma == 0.0)]
+    for name, pv in (("Five", 0.05), ("Ten", 0.10), ("Twenty", 0.20)):
+        d = cor[cor.p == pv].set_index("rho")
+        for rn, rho in (("Zero", 0.0), ("Half", 0.5), ("One", 1.0)):
+            w = d.loc[rho].break_even
+            m[f"Break{name}{rn}"] = gas(round(w)) if w >= 100 else f"{w:.1f}"
+        m[f"Peak{name}"] = f"{d.fraud_D.idxmax():.1f}"
+        m[f"PeakVal{name}"] = f"{d.fraud_D.max():.4f}"
+
+    cfg = pd.read_csv(DATA / "configuration_results.csv").set_index(["staffing", "threshold", "policy"])
+    m["CfgPrimD"] = f"{cfg.loc[('2-3-2', 4, 'D')].complete_absence10 * 100:.2f}\\%"
+    r = cfg.loc[("3-3-3", 4, "D")]
+    m["CfgDelegD"] = f"{r.complete_absence10 * 100:.2f}\\%"
+    m["CfgDelegFrac"], m["CfgDelegCount"] = f"{r.fraction_at_k:.3f}", str(int(r.capable_at_k))
+    m["CfgPrimCount"] = str(int(cfg.loc[("2-3-2", 4, "D")].capable_at_k))
+    big = cfg[(cfg.note == "majority")].xs("D", level="policy").fraction_at_k
+    m["CfgFracMin"], m["CfgFracMax"] = f"{big.min():.3f}", f"{big.max():.3f}"
+    m["OutageBound"] = f"{(1 - 0.05) ** 3 * 100:.1f}\\%"
+    m["BlockCoalExcluded"] = str(int(coal.loc[("C_majority_4of7", 4)].capable - coal.loc[("D_role_4of7", 4)].capable))
+    m["ExactB"] = f"{0.9 ** 7 * 100:.1f}\\%"
+    m["ExactA"] = f"{(1 - 0.1 ** 2) * 100:.1f}\\%"
+
     lines = ["% Generated by experiments/generate_figures.py -- do not edit by hand."]
     lines += [f"\\newcommand{{\\{k}}}{{{v}}}" for k, v in m.items()]
     TABLES.mkdir(parents=True, exist_ok=True)
@@ -346,9 +476,12 @@ def main() -> None:
     fig_gas()
     fig_delay()
     fig_availability()
-    fig_tradeoff()
+    fig_ks()
+    fig_correlation()
     print("tables:")
     tables()
+    table_ks()
+    table_config()
     macros()
 
 

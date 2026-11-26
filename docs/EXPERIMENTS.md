@@ -63,12 +63,12 @@ recorded in `gas_metadata.json`.
 
 | | A | B | C | D |
 |---|---|---|---|---|
-| Total | 198,846 | 758,182 | 480,981 | 481,868 |
+| Total | 199,790 | 763,944 | 484,334 | 485,221 |
 | Transactions | 2 | 8 | 5 | 5 |
 
 - D costs **+887 gas (+0.18%)** per issuance over C. That is the cost of the
-  role check in `finalize` (81,556 vs 80,669 gas).
-- Total gas is driven by the *number of approvals* (~84.8k gas each), not by
+  role check in `finalize` (81,985 vs 81,098 gas).
+- Total gas is driven by the *number of approvals* (~85.7k gas each), not by
   the policy logic.
 - Deploying D's policy contract costs more (286,817 vs 170,266 gas). This is
   a one-off cost.
@@ -109,10 +109,30 @@ and takes seconds to minutes, compared with approval delays of working days.
 - The closed-form checks match the simulation: A = 1 − 0.1² = 99.0% and
   B = 0.9⁷ = 47.8%.
 
+## D. University configurations (exact)
+
+`configuration_study.py` computes k, s, the capable fraction and completion for
+2-3-2, 3-3-3 (thresholds 4 and 5), 3-5-3, 4-4-4 and 4-8-4
+(`configuration_results.csv`). `ConfigurationCheck.t.sol` runs all 511
+coalitions of 3-3-3 against the contracts.
+
+- D's k never differs from C's. Its s is (smallest role - 1).
+- More holders nearly remove the loss from individual absence (97.82% to 99.70%
+  from 2-3-2 to 3-3-3 at m = 4), but not from whole-role outages: with a 5%
+  outage per role D cannot exceed 0.95^3 = 85.7%.
+
+## E. Correlated collusion (exact, assumed parameters)
+
+With probability rho an office is compromised as a block; gamma does the same
+for the whole university (`correlation_results.csv`). D is never worse than C
+on security. Its relative benefit at p = 0.1 grows from 30% (rho = 0) to 85%
+(rho = 0.5) and 96% (rho = 1). The break-even weight is an aid to judgement,
+not a cost.
+
 ## Trade-off summary
 
 At equal threshold (4 of 7), role-constrained approval reduces the share of
 4-person coalitions that can forge from 100% to 68.6%. It costs 0.18% more gas,
 but noticeably reduces availability when a whole role can be unavailable. It
 does not raise the minimum number of insiders needed. These results are for
-one 7-person configuration under the assumptions above.
+the configurations and assumptions above.

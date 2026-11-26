@@ -20,3 +20,4 @@ paper/*.synctex.gz
 
 # Handoff archives
 *.zip
+paper/build/

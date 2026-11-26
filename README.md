@@ -15,10 +15,10 @@ majority-based policies in insider resistance, gas consumption and issuance avai
 | 1. Architecture & threat model | done: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md), [`docs/THREAT_MODEL.md`](docs/THREAT_MODEL.md) |
 | 2. Registry: issue / verify / revoke | implemented: `src/CredentialRegistry.sol` |
 | 3. Four approval policies | implemented: `src/policies/` |
-| 4. Foundry tests | 77 passing: `test/` |
+| 4. Foundry tests | 82 passing: `test/` |
 | 5. End-to-end demo | `script/Demo.s.sol` (verified on Anvil) |
 | 6–9. Experiments A/B/C, figures, tables | done: `experiments/`, results in [`docs/EXPERIMENTS.md`](docs/EXPERIMENTS.md) |
-| 10. Paper (IEEE LaTeX) | skeleton with generated figures, tables and number macros: [`paper/`](paper/README.md); prose to be written |
+| 10. Paper (IEEE LaTeX) | full draft: [`paper/`](paper/README.md); authors still to check every source ([list](paper/sources_checked.md)) |
 
 ## Layout
 
@@ -43,6 +43,7 @@ experiments/
   coalition_analysis.py         Experiment A
   gas_benchmark.py              Experiment B
   availability_simulation.py    Experiment C
+  configuration_study.py        Experiments D, E (configurations, correlation)
   generate_figures.py           figures/ and paper/tables/
   run_all.py                    reproduce everything
   tests/                        pytest checks

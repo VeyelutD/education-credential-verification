@@ -18,7 +18,7 @@ majority-based policies in insider resistance, gas consumption and issuance avai
 | 4. Foundry tests | 82 passing: `test/` |
 | 5. End-to-end demo | `script/Demo.s.sol` (verified on Anvil) |
 | 6–9. Experiments A/B/C, figures, tables | done: `experiments/`, results in [`docs/EXPERIMENTS.md`](docs/EXPERIMENTS.md) |
-| 10. Paper (IEEE LaTeX) | full draft: [`paper/`](paper/README.md); authors still to check every source ([list](paper/sources_checked.md)) |
+| 10. Paper (IEEE LaTeX) | full draft: [`paper/`](paper/README.md) |
 
 ## Layout
 
@@ -32,7 +32,9 @@ test/
   utils/CredentialFixture.sol   synthetic NU: 2 Registrars, 3 Deans, 2 Exam Officers
   Registry.t.sol  Issuance.t.sol  Verification.t.sol  Revocation.t.sol  PolicySecurity.t.sol
   HashParity.t.sol              Python commitments == Solidity commitments
+  ProposalSquatting.t.sol       one insider cannot block a credential by propose-and-cancel
   experiments/CoalitionExport.t.sol   every coalition vs. the real contracts -> data/
+  experiments/ConfigurationCheck.t.sol  all 511 coalitions of a 3-3-3 university
 script/
   Deploy.s.sol                  deploy one policy + registry
   Demo.s.sol                    full lifecycle walkthrough

@@ -5,7 +5,7 @@ Every number below is produced by `python experiments/run_all.py` and stored in
 the pipeline regenerates all of them.
 
 Common setup (`experiments/common.py`): one synthetic university with
-2 Registrars, 3 Deans and 2 Exam Officers (N = 7). Seed `435` everywhere.
+2 Registrars, 3 Deans and 2 Exam Officers (N = 7). Seed `435` for every random step; experiments D and E are exact and need none.
 
 | Policy | Rule |
 |---|---|
